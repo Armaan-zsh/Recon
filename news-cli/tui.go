@@ -48,6 +48,7 @@ type tuiModel struct {
 	loading     bool
 	activePane  int // 0 = list, 1 = reader
 	lastLoaded  int // index of last loaded article (-1 = none)
+	cache       map[string]string // URL -> rendered markdown
 }
 
 func runTUI(articles []Article, result FetchResult) error {
@@ -55,6 +56,7 @@ func runTUI(articles []Article, result FetchResult) error {
 		articles:   articles,
 		result:     result,
 		lastLoaded: -1,
+		cache:      make(map[string]string),
 	}
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, err := p.Run()
@@ -134,6 +136,7 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.viewport.SetContent(fmt.Sprintf("\n  ⚠ Could not fetch article: %v\n\n  Press 'o' to open in browser instead.", msg.err))
 		} else {
+			m.cache[m.articles[m.lastLoaded].Link] = msg.content
 			m.vpContent = msg.content
 			m.viewport.SetContent(msg.content)
 			m.viewport.GotoTop()
@@ -188,10 +191,27 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.scroll = m.cursor - visibleItems + 1
 				}
 			case "enter":
-				if m.cursor < len(m.articles) && m.cursor != m.lastLoaded && !m.loading {
+				if m.cursor < len(m.articles) && !m.loading {
+					// Check cache first
+					if content, ok := m.cache[m.articles[m.cursor].Link]; ok {
+						m.viewport.SetContent(content)
+						m.viewport.GotoTop()
+						m.lastLoaded = m.cursor
+						m.activePane = 1
+						return m, nil
+					}
+
 					m.loading = true
 					m.lastLoaded = m.cursor
-					m.viewport.SetContent("\n  ⏳ Fetching article...")
+					
+					// Show immediate metadata/description
+					a := m.articles[m.cursor]
+					header := titleStyle.Render(a.Title) + "\n" + sourceStyle.Render(a.SourceName) + "\n\n"
+					desc := metaStyle.Render(a.Description) + "\n\n"
+					m.viewport.SetContent(header + desc + "  ⏳ Fetching full article...")
+					m.viewport.GotoTop()
+					m.activePane = 1
+
 					vpWidth := m.width/2 - 4
 					return m, fetchArticleContent(m.articles[m.cursor].Link, vpWidth)
 				}
