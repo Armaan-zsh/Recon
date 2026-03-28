@@ -1,0 +1,2096 @@
+{
+    "stack_exchange_tags": [
+        "cryptography",
+        "encryption",
+        "node.js",
+        "security",
+        "web-security",
+        "aes",
+        "rsa",
+        "hashing",
+        "jwt",
+        "authentication",
+        "ssl",
+        "tls",
+        "libsodium",
+        "webrtc",
+        "socket.io",
+        "express",
+        "reactjs",
+        "next.js"
+    ],
+    "github_repos": [
+        "IndieHosters/docker-liquid-investigations",
+        "ICIJ/datashare",
+        "alephdata/aleph",
+        "ArchiveBox/ArchiveBox",
+        "ipfs/kubo",
+        "element-hq/synapse",
+        "signalapp/Signal-Server",
+        "caddyserver/caddyserver",
+        "gitleaks/gitleaks",
+        "AFLplusplus/AFLplusplus",
+        "NationalSecurityAgency/ghidra",
+        "rapid7/metasploit-framework",
+        "risc0/risc0",
+        "aztec-protocol/noir",
+        "seL4/seL4",
+        "Trusted-AI/adversarial-robustness-toolbox",
+        "Azure/counterfit"
+    ],
+    "subreddits": [
+        "cryptography",
+        "node",
+        "cybersecurity",
+        "netsec",
+        "javascript",
+        "ReverseEngineering",
+        "blackhat",
+        "sysadmin",
+        "programming",
+        "malware",
+        "AskNetsec"
+    ],
+    "engineering_blogs": [
+        {
+            "name": "Google Security Blog",
+            "url": "https://feeds.feedblitz.com/google-security-blog"
+        },
+        {
+            "name": "GitHub Engineering",
+            "url": "https://github.blog/category/engineering/feed/"
+        },
+        {
+            "name": "Netflix Tech Blog",
+            "url": "https://netflixtechblog.com/feed"
+        },
+        {
+            "name": "Cloudflare Blog",
+            "url": "https://blog.cloudflare.com/rss/"
+        },
+        {
+            "name": "8th Light",
+            "url": "https://8thlight.com/insights/feed/rss.xml"
+        },
+        {
+            "name": "AdRoll",
+            "url": "http://tech.adroll.com/feed.xml"
+        },
+        {
+            "name": "Advanced Web Machinery",
+            "url": "https://advancedweb.hu/atom.xml"
+        },
+        {
+            "name": "Airbnb",
+            "url": "https://medium.com/feed/airbnb-engineering"
+        },
+        {
+            "name": "Algolia",
+            "url": "https://blog.algolia.com/blog/rss.xml"
+        },
+        {
+            "name": "Appnexus",
+            "url": "https://medium.com/feed/xandr-tech"
+        },
+        {
+            "name": "Arkency",
+            "url": "https://blog.arkency.com/feed.xml"
+        },
+        {
+            "name": "Artsy",
+            "url": "http://artsy.github.io/feed"
+        },
+        {
+            "name": "Asana",
+            "url": "https://blog.asana.com/feed/"
+        },
+        {
+            "name": "Atlassian",
+            "url": "https://www.atlassian.com/blog/feed"
+        },
+        {
+            "name": "Atomic Object",
+            "url": "https://spin.atomicobject.com/feed/"
+        },
+        {
+            "name": "Auth0",
+            "url": "https://auth0.com/blog/rss.xml"
+        },
+        {
+            "name": "Avenue Code",
+            "url": "https://blog.avenuecode.com/rss.xml"
+        },
+        {
+            "name": "AWS",
+            "url": "https://aws.amazon.com/blogs/aws/feed/"
+        },
+        {
+            "name": "Babbel",
+            "url": "https://cms.babbel.news/feed/?post_type=english_edition"
+        },
+        {
+            "name": "Badoo",
+            "url": "https://medium.com/feed/bumble-tech"
+        },
+        {
+            "name": "Bandcamp",
+            "url": "https://bandcamptech.wordpress.com/feed/"
+        },
+        {
+            "name": "Bazaarvoice",
+            "url": "https://blog.developer.bazaarvoice.com/feed/"
+        },
+        {
+            "name": "BBC",
+            "url": "https://medium.com/feed/bbc-product-technology"
+        },
+        {
+            "name": "Benchling",
+            "url": "https://benchling.engineering/feed"
+        },
+        {
+            "name": "Bigcommerce",
+            "url": "https://www.bigeng.io/rss/"
+        },
+        {
+            "name": "Blender",
+            "url": "https://code.blender.org/rss"
+        },
+        {
+            "name": "Brandwatch",
+            "url": "http://engineering.brandwatch.com/rss"
+        },
+        {
+            "name": "Canva",
+            "url": "https://www.canva.dev/blog/engineering/feed.xml"
+        },
+        {
+            "name": "Capgemini",
+            "url": "https://capgemini.github.io/feed.xml"
+        },
+        {
+            "name": "Cerner",
+            "url": "https://engineering.cerner.com/index.xml"
+        },
+        {
+            "name": "Clever",
+            "url": "https://engineering.clever.com/rss"
+        },
+        {
+            "name": "Cloudera",
+            "url": "https://blog.cloudera.com/feed/"
+        },
+        {
+            "name": "Cloudflare",
+            "url": "https://blog.cloudflare.com/rss"
+        },
+        {
+            "name": "Codelitt",
+            "url": "https://blog.codelitt.com/rss/"
+        },
+        {
+            "name": "CodeName One",
+            "url": "https://www.codenameone.com/feed"
+        },
+        {
+            "name": "Codeship",
+            "url": "https://blog.codeship.com/blog/feed/"
+        },
+        {
+            "name": "Commercetools",
+            "url": "https://techblog.commercetools.com/feed"
+        },
+        {
+            "name": "Confluent",
+            "url": "https://www.confluent.io/rss.xml"
+        },
+        {
+            "name": "Credit Karma",
+            "url": "https://engineering.creditkarma.com/feed"
+        },
+        {
+            "name": "Criteo",
+            "url": "https://medium.com/feed/criteo-engineering"
+        },
+        {
+            "name": "Crowdfire",
+            "url": "https://crowdfire.engineering/feed"
+        },
+        {
+            "name": "CSC - IT Center For Science - Cloud Team",
+            "url": "https://cloud.blog.csc.fi/feeds/posts/default"
+        },
+        {
+            "name": "Curalate",
+            "url": "http://engineering.curalate.com/feed.xml"
+        },
+        {
+            "name": "Databricks",
+            "url": "https://www.databricks.com/feed"
+        },
+        {
+            "name": "Deezer",
+            "url": "https://deezer.io/feed"
+        },
+        {
+            "name": "Deliveroo",
+            "url": "https://deliveroo.engineering/feed.xml"
+        },
+        {
+            "name": "Discord",
+            "url": "https://discord.com/blog/rss.xml"
+        },
+        {
+            "name": "Docker",
+            "url": "https://www.docker.com/feed/"
+        },
+        {
+            "name": "DoorDash",
+            "url": "https://doordash.engineering/blog/rss"
+        },
+        {
+            "name": "Drivy",
+            "url": "https://getaround.tech/feed.xml"
+        },
+        {
+            "name": "Dropbox",
+            "url": "https://dropbox.tech/feed"
+        },
+        {
+            "name": "Ebay",
+            "url": "https://www.ebayinc.com/stories/news/rss/"
+        },
+        {
+            "name": "eFounders",
+            "url": "https://medium.com/feed/unexpected-token"
+        },
+        {
+            "name": "Engine Yard",
+            "url": "https://blog.engineyard.com/rss"
+        },
+        {
+            "name": "Entelo",
+            "url": "https://sourcecode.entelo.com/feed.xml"
+        },
+        {
+            "name": "Envato",
+            "url": "https://webuild.envato.com/blog/rss.xml"
+        },
+        {
+            "name": "Envoy",
+            "url": "https://envoy.engineering/feed"
+        },
+        {
+            "name": "Erlang Solutions",
+            "url": "https://www.erlang-solutions.com/feed/"
+        },
+        {
+            "name": "Eventbrite",
+            "url": "https://www.eventbrite.com/engineering/feed/"
+        },
+        {
+            "name": "Evil Martians",
+            "url": "https://evilmartians.com/chronicles.atom"
+        },
+        {
+            "name": "Expedia",
+            "url": "https://medium.com/feed/expedia-group-tech"
+        },
+        {
+            "name": "Facebook",
+            "url": "https://engineering.fb.com/feed/"
+        },
+        {
+            "name": "Feedzai",
+            "url": "https://medium.com/feed/feedzaitech"
+        },
+        {
+            "name": "Findmypast",
+            "url": "https://tech.findmypast.com/feed.xml"
+        },
+        {
+            "name": "Finn.no",
+            "url": "http://tech.finn.no/atom.xml"
+        },
+        {
+            "name": "Flickr",
+            "url": "https://code.flickr.net/feed/"
+        },
+        {
+            "name": "Freeletics",
+            "url": "https://freeletics.engineering/feed.xml"
+        },
+        {
+            "name": "Galois",
+            "url": "https://galois.com/feed/"
+        },
+        {
+            "name": "GameChanger",
+            "url": "http://tech.gc.com/atom.xml"
+        },
+        {
+            "name": "GIPHY",
+            "url": "https://engineering.giphy.com/rss"
+        },
+        {
+            "name": "GitHub",
+            "url": "https://github.blog/engineering.atom"
+        },
+        {
+            "name": "GitHub Old",
+            "url": "https://github.blog/feed/"
+        },
+        {
+            "name": "GoCardless",
+            "url": "https://gocardless.com/content-platform/rss/resources.xml"
+        },
+        {
+            "name": "GoDaddy",
+            "url": "https://www.godaddy.com/engineering/feed.xml"
+        },
+        {
+            "name": "GoSquared",
+            "url": "https://www.gosquared.com/blog/feed"
+        },
+        {
+            "name": "Grab",
+            "url": "http://engineering.grab.com/feed.xml"
+        },
+        {
+            "name": "Grofers",
+            "url": "https://lambda.blinkit.com/feed"
+        },
+        {
+            "name": "Groupon",
+            "url": "https://medium.com/feed/groupon-eng"
+        },
+        {
+            "name": "Guardian",
+            "url": "https://www.theguardian.com/info/developer-blog/rss"
+        },
+        {
+            "name": "Gusto",
+            "url": "https://engineering.gusto.com/rss/"
+        },
+        {
+            "name": "HackerEarth",
+            "url": "http://engineering.hackerearth.com/rss"
+        },
+        {
+            "name": "Haptik",
+            "url": "https://www.haptik.ai/tech/rss.xml"
+        },
+        {
+            "name": "Harry's",
+            "url": "https://medium.com/feed/harrys-engineering"
+        },
+        {
+            "name": "Hashnode",
+            "url": "https://engineering.hashnode.com/rss.xml"
+        },
+        {
+            "name": "Hashrocket",
+            "url": "https://hashrocket.com/blog.rss"
+        },
+        {
+            "name": "Helpshift",
+            "url": "https://medium.com/feed/helpshift-engineering"
+        },
+        {
+            "name": "Heroku",
+            "url": "https://blog.heroku.com/engineering"
+        },
+        {
+            "name": "Honeybadger",
+            "url": "http://blog.honeybadger.io/blog/feed.xml"
+        },
+        {
+            "name": "Hootsuite",
+            "url": "https://medium.com/feed/hootsuite-engineering"
+        },
+        {
+            "name": "Hostinger",
+            "url": "https://www.hostinger.com/blog/feed"
+        },
+        {
+            "name": "Housing.com",
+            "url": "https://medium.com/feed/engineering-housing"
+        },
+        {
+            "name": "HubSpot",
+            "url": "https://product.hubspot.com/blog/rss.xml"
+        },
+        {
+            "name": "IMVU",
+            "url": "https://engineering.imvu.com/?feed=rss2"
+        },
+        {
+            "name": "Indeed",
+            "url": "https://engineering.indeedblog.com/feed/"
+        },
+        {
+            "name": "Instacart",
+            "url": "https://tech.instacart.com/feed"
+        },
+        {
+            "name": "Instagram",
+            "url": "https://instagram-engineering.com/feed"
+        },
+        {
+            "name": "Jane Street",
+            "url": "https://blogs.janestreet.com/feed.xml"
+        },
+        {
+            "name": "Jobandtalent",
+            "url": "https://jobandtalent.engineering/feed"
+        },
+        {
+            "name": "JobTeaser",
+            "url": "https://medium.com/feed/jobteaser-dev-team"
+        },
+        {
+            "name": "Just Eat",
+            "url": "https://tech.justeattakeaway.com/feed/"
+        },
+        {
+            "name": "Khan Academy",
+            "url": "http://engineering.khanacademy.org/rss"
+        },
+        {
+            "name": "Kinvolk",
+            "url": "https://kinvolk.io/blog/index.xml"
+        },
+        {
+            "name": "Kogan.com",
+            "url": "https://devblog.kogan.com/blog?format=rss"
+        },
+        {
+            "name": "Kolosek",
+            "url": "https://kolosek.com/blog/rss/"
+        },
+        {
+            "name": "LINE",
+            "url": "https://engineering.linecorp.com/en/blog"
+        },
+        {
+            "name": "LiveRamp",
+            "url": "https://liveramp.com/wp-json/wp/v2/pages/1041448"
+        },
+        {
+            "name": "Localytics",
+            "url": "https://eng.localytics.com/rss/"
+        },
+        {
+            "name": "Lyft",
+            "url": "https://eng.lyft.com/feed"
+        },
+        {
+            "name": "Made Tech",
+            "url": "https://www.madetech.com/feed/podcast/"
+        },
+        {
+            "name": "MapTiler",
+            "url": "https://www.maptiler.com/news/feed/posts.xml"
+        },
+        {
+            "name": "Medium",
+            "url": "https://medium.engineering/feed"
+        },
+        {
+            "name": "Mesosphere",
+            "url": "https://d2iq.com/feed"
+        },
+        {
+            "name": "Microsoft Python Engineering",
+            "url": "https://devblogs.microsoft.com/python/feed/"
+        },
+        {
+            "name": "Moove-it",
+            "url": "https://blog.moove-it.com/rss"
+        },
+        {
+            "name": "Mozilla Automation Team",
+            "url": "https://planet.mozilla.org/automation/atom.xml"
+        },
+        {
+            "name": "Mozilla Hacks",
+            "url": "https://hacks.mozilla.org/feed/"
+        },
+        {
+            "name": "Mozilla Release Engineering",
+            "url": "https://planet.mozilla.org/releng/atom.xml"
+        },
+        {
+            "name": "New York Times",
+            "url": "https://open.nytimes.com/feed"
+        },
+        {
+            "name": "Nextdoor",
+            "url": "https://engblog.nextdoor.com/feed"
+        },
+        {
+            "name": "Nordic APIs",
+            "url": "https://nordicapis.com/feed/"
+        },
+        {
+            "name": "Novoda",
+            "url": "https://www.novoda.com/blog/rss"
+        },
+        {
+            "name": "NPR Apps",
+            "url": "https://blog.apps.npr.org/atom.xml"
+        },
+        {
+            "name": "Nvidia",
+            "url": "https://blogs.nvidia.com/feed/"
+        },
+        {
+            "name": "OCTO Technology",
+            "url": "https://blog.octo.com/feed"
+        },
+        {
+            "name": "Okta",
+            "url": "https://developer.okta.com/feed.xml"
+        },
+        {
+            "name": "OLX",
+            "url": "https://tech.olx.com/feed"
+        },
+        {
+            "name": "OpenDNS",
+            "url": "https://umbrella.cisco.com/feed"
+        },
+        {
+            "name": "Oursky",
+            "url": "https://code.oursky.com/feed/"
+        },
+        {
+            "name": "Palantir",
+            "url": "https://blog.palantir.com/feed"
+        },
+        {
+            "name": "Panorama Education",
+            "url": "https://medium.com/feed/building-panorama-education"
+        },
+        {
+            "name": "Paypal",
+            "url": "https://medium.com/feed/paypal-tech"
+        },
+        {
+            "name": "PicCollage",
+            "url": "https://tech.pic-collage.com/feed"
+        },
+        {
+            "name": "Pinterest",
+            "url": "https://medium.com/feed/@Pinterest_Engineering"
+        },
+        {
+            "name": "Postman",
+            "url": "https://medium.com/feed/better-practices"
+        },
+        {
+            "name": "Postmark",
+            "url": "https://postmarkapp.com/blog/feed.atom"
+        },
+        {
+            "name": "Prezi",
+            "url": "https://engineering.prezi.com/feed"
+        },
+        {
+            "name": "PubNub:",
+            "url": "https://www.pubnub.com/feed/blog/"
+        },
+        {
+            "name": "PullReview",
+            "url": "http://blog.8thcolor.com/atom.xml"
+        },
+        {
+            "name": "REA Group",
+            "url": "https://www.rea-group.com/category/tech/feed/"
+        },
+        {
+            "name": "Remind",
+            "url": "http://engineering.remind.com/feed.xml"
+        },
+        {
+            "name": "RetailMeNot",
+            "url": "https://engineering.ziffmedia.com/feed"
+        },
+        {
+            "name": "Riot Games",
+            "url": "https://technology.riotgames.com/rss.xml"
+        },
+        {
+            "name": "RisingStack",
+            "url": "https://blog.risingstack.com/feed/"
+        },
+        {
+            "name": "RoseHosting",
+            "url": "https://www.rosehosting.com/blog/feed/"
+        },
+        {
+            "name": "Schibsted Tech Polska",
+            "url": "https://www.schibsted.pl/wp-json/wp/v2/pages/3339"
+        },
+        {
+            "name": "Sensible",
+            "url": "https://blog.sensible.io/rss"
+        },
+        {
+            "name": "Serverless",
+            "url": "https://www.serverless.com/blog/rss.xml"
+        },
+        {
+            "name": "Sharethis",
+            "url": "https://www.sharethis.com/platform/social-feed/"
+        },
+        {
+            "name": "Shopify",
+            "url": "https://shopify.engineering/blog.atom"
+        },
+        {
+            "name": "SitePoint",
+            "url": "https://sitepoint.com/sitepoint.rss"
+        },
+        {
+            "name": "Sky Betting & Gaming",
+            "url": "https://sbg.technology/feed.xml"
+        },
+        {
+            "name": "Skyscanner",
+            "url": "https://medium.com/feed/@SkyscannerEng"
+        },
+        {
+            "name": "Slack",
+            "url": "https://slack.engineering/rss"
+        },
+        {
+            "name": "Small Improvements",
+            "url": "https://tech.small-improvements.com/rss"
+        },
+        {
+            "name": "Soshace",
+            "url": "https://soshace.com/feed/"
+        },
+        {
+            "name": "Soundcloud",
+            "url": "https://developers.soundcloud.com/blog/blog.rss"
+        },
+        {
+            "name": "Speedledger",
+            "url": "http://engineering.speedledger.com/feed/"
+        },
+        {
+            "name": "Spotify",
+            "url": "https://engineering.atspotify.com/feed"
+        },
+        {
+            "name": "Sqreen",
+            "url": "https://www.datadoghq.com/product/application-security-management/index.xml"
+        },
+        {
+            "name": "Square",
+            "url": "https://corner.squareup.com/blog/rss.xml"
+        },
+        {
+            "name": "Squarespace",
+            "url": "https://engineering.squarespace.com/blog?format=rss"
+        },
+        {
+            "name": "Stack Overflow",
+            "url": "https://stackoverflow.blog/feed"
+        },
+        {
+            "name": "Stackshare",
+            "url": "https://stackshare.io/featured-posts.atom"
+        },
+        {
+            "name": "Stitch Fix",
+            "url": "https://multithreaded.stitchfix.com/feed.xml"
+        },
+        {
+            "name": "Strava",
+            "url": "https://medium.com/feed/strava-engineering"
+        },
+        {
+            "name": "Stripe",
+            "url": "https://stripe.com/blog/feed.rss"
+        },
+        {
+            "name": "SurveyMonkey",
+            "url": "https://www.surveymonkey.com/feed/"
+        },
+        {
+            "name": "Swiggy",
+            "url": "https://bytes.swiggy.com/feed"
+        },
+        {
+            "name": "Takipi",
+            "url": "http://blog.takipi.com/rss"
+        },
+        {
+            "name": "Target",
+            "url": "https://target.github.io/feed.xml"
+        },
+        {
+            "name": "Teamwork",
+            "url": "https://engineroom.teamwork.com/feed"
+        },
+        {
+            "name": "theScore",
+            "url": "http://techblog.thescore.com/feed.xml"
+        },
+        {
+            "name": "Thoughtbot",
+            "url": "https://feeds.feedburner.com/GiantRobotsSmashingIntoOtherGiantRobots"
+        },
+        {
+            "name": "Thumbtack",
+            "url": "https://medium.com/feed/thumbtack-engineering"
+        },
+        {
+            "name": "Timescale",
+            "url": "https://www.timescale.com/blog/rss/"
+        },
+        {
+            "name": "Tinder",
+            "url": "https://medium.com/feed/tinder"
+        },
+        {
+            "name": "Toptal",
+            "url": "https://www.toptal.com/blog.rss"
+        },
+        {
+            "name": "Transferwise",
+            "url": "https://medium.com/feed/wise-engineering"
+        },
+        {
+            "name": "Trivago",
+            "url": "http://tech.trivago.com/rss.xml"
+        },
+        {
+            "name": "TrueCar",
+            "url": "https://medium.com/feed/driven-by-code"
+        },
+        {
+            "name": "Tumblr",
+            "url": "https://engineering.tumblr.com/rss"
+        },
+        {
+            "name": "Twilio",
+            "url": "https://www.twilio.com/blog/feed"
+        },
+        {
+            "name": "Universe",
+            "url": "https://engineering.universe.com/feed"
+        },
+        {
+            "name": "UpGrad",
+            "url": "https://engineering.upgrad.com/feed"
+        },
+        {
+            "name": "Vena Solutions",
+            "url": "https://engineering.vena.io/feed/"
+        },
+        {
+            "name": "VersionEye",
+            "url": "https://blog.versioneye.com/feed/"
+        },
+        {
+            "name": "Vinted",
+            "url": "https://vinted.engineering//atom.xml"
+        },
+        {
+            "name": "VNGRS",
+            "url": "https://medium.com/feed/vngrs"
+        },
+        {
+            "name": "VTS",
+            "url": "https://buildingvts.com/feed"
+        },
+        {
+            "name": "Wayfair",
+            "url": "https://www.aboutwayfair.com/careers/tech-blog.rss"
+        },
+        {
+            "name": "Wealthfront",
+            "url": "https://eng.wealthfront.com/feed/"
+        },
+        {
+            "name": "Wemake.services",
+            "url": "https://medium.com/feed/wemake-services"
+        },
+        {
+            "name": "Wingify",
+            "url": "http://engineering.wingify.com/atom.xml"
+        },
+        {
+            "name": "WyeWorks",
+            "url": "https://wyeworks.com/rss.xml"
+        },
+        {
+            "name": "XING",
+            "url": "https://tech.new-work.se/feed"
+        },
+        {
+            "name": "Yahoo",
+            "url": "https://yahooeng.tumblr.com/rss"
+        },
+        {
+            "name": "Yammer",
+            "url": "https://medium.com/feed/yammer-engineering"
+        },
+        {
+            "name": "Zendesk",
+            "url": "https://zendesk.engineering/feed"
+        },
+        {
+            "name": "Zendesk(old)",
+            "url": "https://developerblog.zendesk.com/feed"
+        },
+        {
+            "name": "0xADADA",
+            "url": "https://0xadada.pub/rss.xml"
+        },
+        {
+            "name": "Aaron Patterson",
+            "url": "http://tenderlovemaking.com/atom.xml"
+        },
+        {
+            "name": "Abu Ashraf Masnun",
+            "url": "https://masnun.com/feed"
+        },
+        {
+            "name": "Addy Osmani",
+            "url": "http://addyosmani.com/rss.xml"
+        },
+        {
+            "name": "Alan Storm",
+            "url": "https://alanastorm.com/feed/feed.xml"
+        },
+        {
+            "name": "Alex Russell",
+            "url": "https://infrequently.org/feed/"
+        },
+        {
+            "name": "Amit Merchant",
+            "url": "https://www.amitmerchant.com/feed.xml"
+        },
+        {
+            "name": "Anders Aarvik",
+            "url": "http://aarvik.dk/rss/index.html"
+        },
+        {
+            "name": "Andrew Bancroft",
+            "url": "https://www.andrewcbancroft.com/index.xml"
+        },
+        {
+            "name": "Antirez",
+            "url": "http://antirez.com/rss"
+        },
+        {
+            "name": "Ariejan de Vroom",
+            "url": "https://www.devroom.io/index.xml"
+        },
+        {
+            "name": "Ariya Hidayat",
+            "url": "https://ariya.io/index.xml"
+        },
+        {
+            "name": "Armin Ronacher",
+            "url": "http://lucumr.pocoo.org/feed.atom"
+        },
+        {
+            "name": "Axel Rauschmayer",
+            "url": "https://2ality.com/feeds/posts.atom"
+        },
+        {
+            "name": "Bad Concurrency",
+            "url": "http://bad-concurrency.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Bartlomiej Filipek",
+            "url": "https://www.cppstories.com/index.xml"
+        },
+        {
+            "name": "Bill the Lizard",
+            "url": "https://www.billthelizard.com/feed/"
+        },
+        {
+            "name": "Bj\u00f8rn Johansen",
+            "url": "https://www.bjornjohansen.com/feed"
+        },
+        {
+            "name": "Blake Erickson",
+            "url": "https://blog.blakeerickson.com/feed.xml"
+        },
+        {
+            "name": "Blundell's Android Tutorials",
+            "url": "https://blog.blundellapps.co.uk/feed/"
+        },
+        {
+            "name": "Bohops",
+            "url": "https://bohops.com/feed/"
+        },
+        {
+            "name": "Brendan Eich",
+            "url": "https://brendaneich.com/feed/"
+        },
+        {
+            "name": "Brendan Gregg",
+            "url": "http://www.brendangregg.com/blog/rss.xml"
+        },
+        {
+            "name": "Brujo Benavides",
+            "url": "https://medium.com/feed/@elbrujohalcon"
+        },
+        {
+            "name": "Bryan Cantrill",
+            "url": "https://bcantrill.dtrace.org/feed/"
+        },
+        {
+            "name": "Carlos Becker",
+            "url": "https://carlosbecker.com/index.xml"
+        },
+        {
+            "name": "Chen Hui Jing",
+            "url": "https://www.chenhuijing.com/feed.xml"
+        },
+        {
+            "name": "Chien Tran",
+            "url": "https://thelazylog.com/rss/"
+        },
+        {
+            "name": "Chris Wellons",
+            "url": "http://nullprogram.com/feed/"
+        },
+        {
+            "name": "Code with style!",
+            "url": "https://codewithstyle.info/atom.xml"
+        },
+        {
+            "name": "Codrops",
+            "url": "https://tympanus.net/codrops/feed/"
+        },
+        {
+            "name": "Daily JS",
+            "url": "https://medium.com/feed/dailyjs"
+        },
+        {
+            "name": "Daily Tech Video",
+            "url": "https://dailytechvideo.com/feed/"
+        },
+        {
+            "name": "Dan Luu",
+            "url": "https://danluu.com/atom.xml"
+        },
+        {
+            "name": "Daniel Doubrovkine (dB.)",
+            "url": "https://code.dblock.org/feed.xml"
+        },
+        {
+            "name": "Daniel Schmidt",
+            "url": "https://medium.com/feed/@dschmidt1992"
+        },
+        {
+            "name": "Dave Cheney",
+            "url": "https://dave.cheney.net/feed"
+        },
+        {
+            "name": "David Walsh",
+            "url": "https://davidwalsh.name/feed/atom"
+        },
+        {
+            "name": "Dean Hume",
+            "url": "https://deanhume.com/rss/"
+        },
+        {
+            "name": "Dennis Felsing",
+            "url": "https://hookrace.net/blog/feed/"
+        },
+        {
+            "name": "Dereuromark",
+            "url": "https://www.dereuromark.de/feed/"
+        },
+        {
+            "name": "Domenico Luciani",
+            "url": "https://domenicoluciani.com/feed.xml"
+        },
+        {
+            "name": "Dot Dev (.dev)",
+            "url": "https://dotdev.co/feed/"
+        },
+        {
+            "name": "Dragan Djuric",
+            "url": "https://dragan.rocks/feed.xml"
+        },
+        {
+            "name": "Dragan Gaic",
+            "url": "http://www.gajotres.net/feed/"
+        },
+        {
+            "name": "Drew DeVault",
+            "url": "https://drewdevault.com/blog/index.xml"
+        },
+        {
+            "name": "Eddie Smith",
+            "url": "http://www.practicallyefficient.com/feed.xml"
+        },
+        {
+            "name": "Edgar Aroutiounian",
+            "url": "https://hyegar.com/index.xml"
+        },
+        {
+            "name": "Edward Faulkner",
+            "url": "https://eaf4.com/rss/"
+        },
+        {
+            "name": "Elegant Code",
+            "url": "https://elegantcode.com/feed/"
+        },
+        {
+            "name": "Eli Bendersky",
+            "url": "https://eli.thegreenplace.net/feeds/all.atom.xml"
+        },
+        {
+            "name": "Eric Elliot",
+            "url": "https://medium.com/feed/javascript-scene"
+        },
+        {
+            "name": "Eric Lippert",
+            "url": "https://ericlippert.com/feed/"
+        },
+        {
+            "name": "Erik Runyon",
+            "url": "https://erikrunyon.com/feed.xml"
+        },
+        {
+            "name": "Evan Hahn",
+            "url": "https://evanhahn.com/blog/index.xml"
+        },
+        {
+            "name": "Evan Jones",
+            "url": "http://www.evanjones.ca/index.rss"
+        },
+        {
+            "name": "Evan Miller",
+            "url": "http://www.evanmiller.org/news.xml"
+        },
+        {
+            "name": "Federico Cargnelutti",
+            "url": "https://blog.fedecarg.com/feed/"
+        },
+        {
+            "name": "Federico Tomassetti",
+            "url": "https://tomassetti.me/wp-json/wp/v2/pages/6218"
+        },
+        {
+            "name": "Filippo Valsorda",
+            "url": "https://words.filippo.io/rss/"
+        },
+        {
+            "name": "Freek Van der Herten",
+            "url": "https://freek.dev/feed"
+        },
+        {
+            "name": "Gleb Bahmutov",
+            "url": "https://glebbahmutov.com/blog/atom.xml"
+        },
+        {
+            "name": "Graham King",
+            "url": "https://www.darkcoding.net/index.xml"
+        },
+        {
+            "name": "Guido van Rossum",
+            "url": "http://neopythonic.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Guilherme Rodrigues",
+            "url": "https://firstdoit.com/feed"
+        },
+        {
+            "name": "Hayden James",
+            "url": "https://haydenjames.io/feed"
+        },
+        {
+            "name": "Henrik Lau Eriksson",
+            "url": "https://conductofcode.io/feed.xml"
+        },
+        {
+            "name": "Henrik Warne",
+            "url": "https://henrikwarne.com/feed/"
+        },
+        {
+            "name": "High Scalability",
+            "url": "https://highscalability.com/rss/"
+        },
+        {
+            "name": "Huon Wilson",
+            "url": "http://huonw.github.io/blog/atom.xml"
+        },
+        {
+            "name": "Hypriot",
+            "url": "https://blog.hypriot.com/index.xml"
+        },
+        {
+            "name": "Ian Hummel",
+            "url": "https://themodernlife.github.io/feed.xml"
+        },
+        {
+            "name": "Idontgetoutmuch's Weblog",
+            "url": "https://idontgetoutmuch.wordpress.com/feed/"
+        },
+        {
+            "name": "Ievgen Kuzminov",
+            "url": "http://stdout.in/en/cat/all.rss"
+        },
+        {
+            "name": "Ilija Eftimov",
+            "url": "http://ieftimov.com/index.xml"
+        },
+        {
+            "name": "Ilya Grigorik",
+            "url": "https://ilya.grigorik.com/essays/rss/"
+        },
+        {
+            "name": "Itamar Turner-Trauring",
+            "url": "https://codewithoutrules.com/atom.xml"
+        },
+        {
+            "name": "Jacopo Tarantino",
+            "url": "https://jack.ofspades.com/rss/index.html"
+        },
+        {
+            "name": "Jake Trent",
+            "url": "https://jaketrent.com/post/feed.xml"
+        },
+        {
+            "name": "Jake Wharton",
+            "url": "https://jakewharton.com/atom.xml"
+        },
+        {
+            "name": "Jake Yesbeck",
+            "url": "http://jakeyesbeck.com/atom.xml"
+        },
+        {
+            "name": "James Hague",
+            "url": "http://prog21.dadgum.com/atom.xml"
+        },
+        {
+            "name": "James Long",
+            "url": "https://archive.jlongster.com/atom.xml"
+        },
+        {
+            "name": "Jamis Buck",
+            "url": "http://feeds.feedburner.com/buckblog"
+        },
+        {
+            "name": "Jan Lelis",
+            "url": "https://idiosyncratic-ruby.com/feed.xml"
+        },
+        {
+            "name": "Jay Fields",
+            "url": "http://blog.jayfields.com/feeds/posts/default"
+        },
+        {
+            "name": "Jeff Atwood",
+            "url": "https://blog.codinghorror.com/rss/"
+        },
+        {
+            "name": "Jeff Preshing",
+            "url": "http://preshing.com/feed"
+        },
+        {
+            "name": "Jeremy Kun",
+            "url": "https://www.jeremykun.com/index.xml"
+        },
+        {
+            "name": "Jerry Gamblin",
+            "url": "https://jerrygamblin.com/feed/"
+        },
+        {
+            "name": "Jesal Gadhia",
+            "url": "https://jes.al/atom.xml"
+        },
+        {
+            "name": "Jessie Frazelle",
+            "url": "https://blog.jessfraz.com/index.xml"
+        },
+        {
+            "name": "Joe Nelson",
+            "url": "https://begriffs.com/atom.xml"
+        },
+        {
+            "name": "Joel Spolsky",
+            "url": "https://www.joelonsoftware.com/feed/"
+        },
+        {
+            "name": "Johannes Brodwall",
+            "url": "http://johannesbrodwall.com/index.xml"
+        },
+        {
+            "name": "John Resig",
+            "url": "https://feeds.feedburner.com/JohnResig"
+        },
+        {
+            "name": "John Wittenauer",
+            "url": "https://www.johnwittenauer.net/rss/"
+        },
+        {
+            "name": "Jon Skeet",
+            "url": "https://codeblog.jonskeet.uk/feed/"
+        },
+        {
+            "name": "Jonathan Dekhtiar",
+            "url": "http://www.born2data.com/feed_atom.xml"
+        },
+        {
+            "name": "Jonathan Snook",
+            "url": "https://snook.ca/jonathan/index.rdf"
+        },
+        {
+            "name": "Josh Haberman",
+            "url": "https://blog.reverberate.org/feed.xml"
+        },
+        {
+            "name": "Josh Sherman",
+            "url": "https://joshtronic.com/feed/"
+        },
+        {
+            "name": "Juan Treminio",
+            "url": "https://jtreminio.com/feed"
+        },
+        {
+            "name": "Julia Evans",
+            "url": "https://jvns.ca/atom.xml"
+        },
+        {
+            "name": "Junior Grossi",
+            "url": "https://blog.jgrossi.com/feed/"
+        },
+        {
+            "name": "Justin Weiss",
+            "url": "https://www.justinweiss.com/atom.xml"
+        },
+        {
+            "name": "K. Harrison",
+            "url": "https://useyourloaf.com/blog/rss.xml"
+        },
+        {
+            "name": "Kevin Burke",
+            "url": "https://kevin.burke.dev/feed/"
+        },
+        {
+            "name": "Kirill Shevchenko",
+            "url": "https://medium.com/feed/@kirill_shevch"
+        },
+        {
+            "name": "Kyle Kingsbury",
+            "url": "https://aphyr.com/posts.atom"
+        },
+        {
+            "name": "Lambda the Ultimate",
+            "url": "http://lambda-the-ultimate.org/rss.xml"
+        },
+        {
+            "name": "Larry Land",
+            "url": "https://lg.io/feed.xml"
+        },
+        {
+            "name": "Lazarus Lazaridis",
+            "url": "https://iridakos.com/feed.xml"
+        },
+        {
+            "name": "Lea Verou",
+            "url": "http://lea.verou.me/feed.xml"
+        },
+        {
+            "name": "Lerner Consulting Blog",
+            "url": "http://blog.lerner.co.il/feed"
+        },
+        {
+            "name": "Life Plus Linux",
+            "url": "http://lifepluslinux.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Luciano Mammino",
+            "url": "https://loige.co/rss.xml"
+        },
+        {
+            "name": "Marc Plano-Lesay",
+            "url": "https://enoent.fr/index.xml"
+        },
+        {
+            "name": "Marcelo Rinesi",
+            "url": "https://blog.rinesi.com/feed/"
+        },
+        {
+            "name": "Marco Pivetta",
+            "url": "https://ocramius.github.io/atom.xml"
+        },
+        {
+            "name": "Marek Majkowski",
+            "url": "https://idea.popcount.org/rss.xml"
+        },
+        {
+            "name": "Mark Seaborn",
+            "url": "http://lackingrhoticity.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Martin Fowler",
+            "url": "https://martinfowler.com/feed.atom"
+        },
+        {
+            "name": "Mary Rose Cook",
+            "url": "https://maryrosecook.com/blog/feed.xml"
+        },
+        {
+            "name": "Matt Aimonetti",
+            "url": "https://matt.aimonetti.net/posts/index.xml"
+        },
+        {
+            "name": "Matt Cutts",
+            "url": "https://www.mattcutts.com/blog/feed/"
+        },
+        {
+            "name": "Matt Might",
+            "url": "http://matt.might.net/articles/feed.rss"
+        },
+        {
+            "name": "Matt Warren",
+            "url": "http://mattwarren.org/atom.xml"
+        },
+        {
+            "name": "Matthew Green",
+            "url": "https://blog.cryptographyengineering.com/feed/"
+        },
+        {
+            "name": "Michael Crump",
+            "url": "https://www.michaelcrump.net/feed.xml"
+        },
+        {
+            "name": "Michael Herman",
+            "url": "https://mherman.org/feed.xml"
+        },
+        {
+            "name": "Miguel Quinones",
+            "url": "https://www.miqu.me/atom.xml"
+        },
+        {
+            "name": "Mike Ash",
+            "url": "http://www.mikeash.com/pyblog/rss.py"
+        },
+        {
+            "name": "Mike Fogus",
+            "url": "http://blog.fogus.me/feed/"
+        },
+        {
+            "name": "Miro Cupak",
+            "url": "https://mirocupak.com/feed.xml"
+        },
+        {
+            "name": "Monica Dinculescu",
+            "url": "https://meowni.ca/atom.xml"
+        },
+        {
+            "name": "Monstermuffin",
+            "url": "https://blog.monstermuffin.org/index.xml"
+        },
+        {
+            "name": "Mykhailo Kozik",
+            "url": "http://feeds.feedburner.com/mishadoff"
+        },
+        {
+            "name": "Nelson Elhage",
+            "url": "https://blog.nelhage.com/atom.xml"
+        },
+        {
+            "name": "Nic Raboy",
+            "url": "https://www.thepolyglotdeveloper.com/blog/index.xml"
+        },
+        {
+            "name": "Nick Craver",
+            "url": "https://nickcraver.com/blog/feed.xml"
+        },
+        {
+            "name": "Nick Desaulniers",
+            "url": "https://nickdesaulniers.github.io/index.xml"
+        },
+        {
+            "name": "Nicolas Liochon",
+            "url": "http://blog.thislongrun.com/feeds/posts/default"
+        },
+        {
+            "name": "Nicolai Parlog (CodeFX)",
+            "url": "http://codefx.org/feed.xml"
+        },
+        {
+            "name": "Nikola Bre\u017enjak",
+            "url": "https://nikola-breznjak.com/blog/feed/atom/"
+        },
+        {
+            "name": "NSHipster",
+            "url": "http://nshipster.com/feed.xml"
+        },
+        {
+            "name": "Nate Berkopec",
+            "url": "https://www.nateberkopec.com/feed.xml"
+        },
+        {
+            "name": "Ofer Zelig",
+            "url": "https://fullstack.info/feed/"
+        },
+        {
+            "name": "Ole Begemann",
+            "url": "https://oleb.net/blog/atom.xml"
+        },
+        {
+            "name": "Oona R\u00e4is\u00e4nen",
+            "url": "https://www.windytan.com/feeds/posts/default"
+        },
+        {
+            "name": "Pamela Fox",
+            "url": "http://blog.pamelafox.org/feeds/posts/default"
+        },
+        {
+            "name": "Pat Shaughnessy",
+            "url": "http://feeds2.feedburner.com/patshaughnessy"
+        },
+        {
+            "name": "Paul Irish",
+            "url": "https://feeds.feedburner.com/paul-irish"
+        },
+        {
+            "name": "Paul Lewis",
+            "url": "https://aerotwist.com/blog/feed/"
+        },
+        {
+            "name": "Pawe\u0142 Chudzik",
+            "url": "https://blog.pchudzik.com/index.xml"
+        },
+        {
+            "name": "Peter Norvig",
+            "url": "http://www.norvig.com/rss-feed.xml"
+        },
+        {
+            "name": "Peter Steinberger",
+            "url": "http://petersteinberger.com/atom.xml"
+        },
+        {
+            "name": "Peteris Krumins",
+            "url": "https://catonmat.net/feed"
+        },
+        {
+            "name": "Petr Mitrichev",
+            "url": "https://blog.mitrichev.ch/feeds/posts/default"
+        },
+        {
+            "name": "Philip Walton",
+            "url": "https://feeds.feedburner.com/philipwalton"
+        },
+        {
+            "name": "Philipp Oppermann",
+            "url": "https://os.phil-opp.com/rss.xml"
+        },
+        {
+            "name": "Pony Foo",
+            "url": "https://feeds.feedburner.com/ponyfoo"
+        },
+        {
+            "name": "Piotr Pasich",
+            "url": "http://piotrpasich.com/feed/"
+        },
+        {
+            "name": "Rachel Kroll",
+            "url": "https://rachelbythebay.com/w/atom.xml"
+        },
+        {
+            "name": "Radek Pazdera",
+            "url": "http://radek.io/rss"
+        },
+        {
+            "name": "Radim \u0158eh\u016f\u0159ek",
+            "url": "https://radimrehurek.com/feed/"
+        },
+        {
+            "name": "Ramon Fried",
+            "url": "https://nativeguru.wordpress.com/feed/"
+        },
+        {
+            "name": "Ray Wenderlich",
+            "url": "https://www.raywenderlich.com/feed"
+        },
+        {
+            "name": "Raymond Chen",
+            "url": "https://devblogs.microsoft.com/oldnewthing/feed"
+        },
+        {
+            "name": "Raymond Hettinger",
+            "url": "https://rhettinger.wordpress.com/feed/"
+        },
+        {
+            "name": "ReactJS News",
+            "url": "https://reactjsnews.com/feed.xml"
+        },
+        {
+            "name": "Real Python",
+            "url": "https://realpython.com/atom.xml"
+        },
+        {
+            "name": "Reginald Braithwaite",
+            "url": "https://raganwald.com/atom.xml"
+        },
+        {
+            "name": "Regular Geek",
+            "url": "https://regulargeek.com/feed/"
+        },
+        {
+            "name": "Rob Allen",
+            "url": "https://akrabat.com/feed/"
+        },
+        {
+            "name": "Robert C. Martin",
+            "url": "http://blog.cleancoder.com/atom.xml"
+        },
+        {
+            "name": "Robin Ward",
+            "url": "https://eviltrout.com/feed.xml"
+        },
+        {
+            "name": "Robin Wilson",
+            "url": "https://blog.rtwilson.com/feed/"
+        },
+        {
+            "name": "Ruslan Spivak",
+            "url": "https://ruslanspivak.com/feeds/all.atom.xml"
+        },
+        {
+            "name": "Sam Saffron",
+            "url": "http://samsaffron.com/posts.rss"
+        },
+        {
+            "name": "Schakko",
+            "url": "https://www.schakko.de/feed/"
+        },
+        {
+            "name": "Scott Hanselman",
+            "url": "http://feeds.hanselman.com/ScottHanselman"
+        },
+        {
+            "name": "Scott Johnson",
+            "url": "http://fuzzyblog.io/blog/feed.xml"
+        },
+        {
+            "name": "Srinivas Tamada",
+            "url": "https://www.9lessons.info/feeds/posts/default"
+        },
+        {
+            "name": "Stack Abuse",
+            "url": "https://stackabuse.com/rss/"
+        },
+        {
+            "name": "Stanko Tadi\u0107",
+            "url": "https://muffinman.io/atom.xml"
+        },
+        {
+            "name": "Stefan Parker",
+            "url": "https://codebeforethehorse.tumblr.com/rss"
+        },
+        {
+            "name": "Stephen Colebourne",
+            "url": "https://blog.joda.org/feeds/posts/default"
+        },
+        {
+            "name": "Steve Bellovin",
+            "url": "https://www.cs.columbia.edu/~smb/blog/control/blog.xml"
+        },
+        {
+            "name": "Steve Yegge",
+            "url": "https://steve-yegge.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Swizec Teller",
+            "url": "https://swizec.com/rss.xml"
+        },
+        {
+            "name": "Tania Rascia",
+            "url": "https://tania.dev/rss.xml"
+        },
+        {
+            "name": "The Coded Self",
+            "url": "https://www.thecodedself.com/feed.xml"
+        },
+        {
+            "name": "The Daily WTF",
+            "url": "https://syndication.thedailywtf.com/TheDailyWtf"
+        },
+        {
+            "name": "Thomas Young",
+            "url": "http://upcoder.com/feed"
+        },
+        {
+            "name": "Tikhon Jelvis",
+            "url": "http://jelv.is/blog/rss.xml"
+        },
+        {
+            "name": "T.J. Maher",
+            "url": "https://www.tjmaher.com/feeds/posts/default"
+        },
+        {
+            "name": "Una Kravets",
+            "url": "https://una.im/rss.xml"
+        },
+        {
+            "name": "Undocumented Matlab",
+            "url": "https://undocumentedmatlab.com/feed"
+        },
+        {
+            "name": "Vanilla Java",
+            "url": "http://blog.vanillajava.blog/feeds/posts/default"
+        },
+        {
+            "name": "Vlad Mihalcea",
+            "url": "https://vladmihalcea.com/feed/"
+        },
+        {
+            "name": "Wilfred Hughes",
+            "url": "http://www.wilfred.me.uk/rss.xml"
+        },
+        {
+            "name": "William Kennedy",
+            "url": "https://www.goinggo.net/blog/index.xml"
+        },
+        {
+            "name": "Wojtek Gawro\u0144ski",
+            "url": "http://www.afronski.pl/feed.xml"
+        },
+        {
+            "name": "Yegor Bugayenko",
+            "url": "https://www.yegor256.com/rss.xml"
+        },
+        {
+            "name": "Yifan Lu",
+            "url": "http://yifan.lu/feed.xml"
+        },
+        {
+            "name": "Zach Holman",
+            "url": "https://zachholman.com/atom.xml"
+        },
+        {
+            "name": "Zolmeister",
+            "url": "https://zolmeister.com/feeds/posts/default"
+        },
+        {
+            "name": "Android",
+            "url": "https://android-developers.googleblog.com/feeds/posts/default"
+        },
+        {
+            "name": "Bootstrap.com",
+            "url": "https://blog.getbootstrap.com/feed.xml"
+        },
+        {
+            "name": "Crystal",
+            "url": "https://crystal-lang.org/feed.xml"
+        },
+        {
+            "name": "Go",
+            "url": "https://blog.golang.org/blog/feed.atom"
+        },
+        {
+            "name": "IPFS",
+            "url": "https://blog.ipfs.tech/index.xml"
+        },
+        {
+            "name": "jOOQ",
+            "url": "https://blog.jooq.org/feed/"
+        },
+        {
+            "name": "Kotlin",
+            "url": "https://blog.jetbrains.com/kotlin/feed/"
+        },
+        {
+            "name": "Laravel",
+            "url": "https://feed.laravel-news.com/"
+        },
+        {
+            "name": "Microsoft Edge",
+            "url": "https://blogs.windows.com/msedgedev/wp-json/wp/v2/pages/24431"
+        },
+        {
+            "name": ".NET",
+            "url": "https://devblogs.microsoft.com/dotnet/feed/"
+        },
+        {
+            "name": "React Native",
+            "url": "http://facebook.github.io/blog/rss.xml"
+        },
+        {
+            "name": "Red",
+            "url": "https://www.red-lang.org/feeds/posts/default"
+        },
+        {
+            "name": "RocksDB",
+            "url": "http://rocksdb.org/feed.xml"
+        },
+        {
+            "name": "Rust",
+            "url": "https://blog.rust-lang.org/feed.xml"
+        },
+        {
+            "name": "Sketch",
+            "url": "https://blog.sketchapp.com/blog/feed.xml"
+        },
+        {
+            "name": "Swift",
+            "url": "https://developer.apple.com/swift/blog/news.rss"
+        },
+        {
+            "name": "Google Project Zero",
+            "url": "https://googleprojectzero.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Trail of Bits",
+            "url": "https://blog.trailofbits.com/feed/"
+        },
+        {
+            "name": "Schneier on Security",
+            "url": "https://www.schneier.com/blog/index.rdf"
+        },
+        {
+            "name": "Krebs on Security",
+            "url": "https://krebsonsecurity.com/feed/"
+        },
+        {
+            "name": "Overreacted (Dan Abramov)",
+            "url": "https://overreacted.io/rss.xml"
+        },
+        {
+            "name": "Vercel Blog",
+            "url": "https://vercel.com/atom"
+        },
+        {
+            "name": "Bun Blog",
+            "url": "https://bun.sh/rss.xml"
+        },
+        {
+            "name": "Sam Newman (Distributed Systems)",
+            "url": "https://samnewman.io/blog/feed.xml"
+        },
+        {
+            "name": "Cindy Sridharan",
+            "url": "https://medium.com/feed/@copyconstruct"
+        },
+        {
+            "name": "Charity Majors (Charity.wtf)",
+            "url": "https://charity.wtf/feed/"
+        },
+        {
+            "name": "Honeycomb Blog",
+            "url": "https://www.honeycomb.io/blog/rss.xml"
+        },
+        {
+            "name": "Fly.io Blog",
+            "url": "https://fly.io/blog/feed.xml"
+        },
+        {
+            "name": "Tailscale Blog",
+            "url": "https://tailscale.com/blog/index.xml"
+        },
+        {
+            "name": "Oxide Computer Company",
+            "url": "https://oxide.computer/rss.xml"
+        },
+        {
+            "name": "seL4 Systems (Research/News)",
+            "url": "https://sel4.systems/news.xml"
+        },
+        {
+            "name": "The Pragmatic Engineer",
+            "url": "https://blog.pragmaticengineer.com/rss/"
+        },
+        {
+            "name": "Airtable Engineering",
+            "url": "https://medium.com/feed/airtable-eng"
+        },
+        {
+            "name": "Medium Engineering",
+            "url": "https://medium.com/feed/medium-eng"
+        },
+        {
+            "name": "PayPal Engineering",
+            "url": "https://medium.com/feed/paypal-engineering"
+        },
+        {
+            "name": "Pinterest Engineering (Medium)",
+            "url": "https://medium.com/feed/pinterest-engineering"
+        },
+        {
+            "name": "Grab Tech",
+            "url": "https://engineering.grab.com/feed.xml"
+        },
+        {
+            "name": "Grokking Newsletter",
+            "url": "http://newsletter.grokking.org/?format=rss"
+        },
+        {
+            "name": "Canva Engineering",
+            "url": "https://engineering.canva.com/rss"
+        },
+        {
+            "name": "WePay Engineering",
+            "url": "https://wecode.wepay.com/feed.xml"
+        },
+        {
+            "name": "Web Browser Engineering",
+            "url": "https://browser.engineering/rss.xml"
+        },
+        {
+            "name": "Shopify Engineering",
+            "url": "https://shopifyengineering.myshopify.com/blogs/engineering.atom"
+        },
+        {
+            "name": "Josh Comeau",
+            "url": "https://joshwcomeau.com/rss.xml"
+        },
+        {
+            "name": "Flurries of Latent Creativity (Stripe CTO)",
+            "url": "https://blog.singleton.io/index.xml"
+        },
+        {
+            "name": "Sophie Alpert",
+            "url": "https://sophiebits.com/atom.xml"
+        },
+        {
+            "name": "Amjad Masad",
+            "url": "https://amasad.me/rss"
+        },
+        {
+            "name": "Signal Blog",
+            "url": "https://signal.org/blog/rss.xml"
+        },
+        {
+            "name": "Nvidia Developer Blog",
+            "url": "https://developer.nvidia.com/blog/feed"
+        },
+        {
+            "name": "The Decision Lab",
+            "url": "https://thedecisionlab.com/feed/"
+        },
+        {
+            "name": "George Hotz (Geohot)",
+            "url": "https://geohot.github.io/blog/feed.xml"
+        },
+        {
+            "name": "Hacker News (RSS)",
+            "url": "http://news.ycombinator.com/rss"
+        },
+        {
+            "name": "Benedict Evans",
+            "url": "http://ben-evans.com/benedictevans?format=rss"
+        },
+        {
+            "name": "First Round Review",
+            "url": "http://firstround.com/review/feed.xml"
+        },
+        {
+            "name": "Sam Altman",
+            "url": "http://blog.samaltman.com/posts.atom"
+        },
+        {
+            "name": "Andrew Chen",
+            "url": "http://andrewchen.co/feed/"
+        },
+        {
+            "name": "Irrational Exuberance (Will Larson / Lethain)",
+            "url": "https://lethain.com/feeds/"
+        },
+        {
+            "name": "Andrew Ayer",
+            "url": "https://www.agwa.name/blog/feed"
+        },
+        {
+            "name": "Andrew Hay",
+            "url": "http://www.andrewhay.ca/feed"
+        },
+        {
+            "name": "Ars Technica",
+            "url": "http://feeds.arstechnica.com/arstechnica/security"
+        },
+        {
+            "name": "Brian Krebs",
+            "url": "http://krebsonsecurity.com/feed/"
+        },
+        {
+            "name": "Bruce Schneier",
+            "url": "https://www.schneier.com/blog/atom.xml"
+        },
+        {
+            "name": "CyberSecPolitics",
+            "url": "http://cybersecpolitics.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Dan Kaminsky",
+            "url": "https://dankaminsky.com/feed/"
+        },
+        {
+            "name": "Dark Reading",
+            "url": "http://www.darkreading.com/rss_simple.asp"
+        },
+        {
+            "name": "Errata Security",
+            "url": "http://blog.erratasec.com/feeds/posts/default"
+        },
+        {
+            "name": "Google",
+            "url": "https://security.googleblog.com/feeds/posts/default"
+        },
+        {
+            "name": "Graham Cluley",
+            "url": "https://www.grahamcluley.com/feed"
+        },
+        {
+            "name": "Kevin Beaumont",
+            "url": "https://medium.com/feed/@networksecurity"
+        },
+        {
+            "name": "Krypt3ia",
+            "url": "https://krypt3ia.wordpress.com/feed/"
+        },
+        {
+            "name": "Lawfare",
+            "url": "https://www.lawfareblog.com/taxonomy/term/5798/all/feed"
+        },
+        {
+            "name": "Malwarebytes",
+            "url": "http://blog.malwarebytes.org/feed/"
+        },
+        {
+            "name": "Matt Suiche",
+            "url": "https://medium.com/feed/@msuiche"
+        },
+        {
+            "name": "naked security",
+            "url": "https://nakedsecurity.sophos.com/feed/"
+        },
+        {
+            "name": "Roger McClinton",
+            "url": "https://www.infosecblog.org/feed/"
+        },
+        {
+            "name": "Securelist",
+            "url": "https://securelist.com/feed/"
+        },
+        {
+            "name": "Team Cymru",
+            "url": "https://blog.team-cymru.org/feed/"
+        },
+        {
+            "name": "the grugq",
+            "url": "https://medium.com/feed/@thegrugq"
+        },
+        {
+            "name": "The Security Blogger",
+            "url": "http://www.thesecurityblogger.com/feed/"
+        },
+        {
+            "name": "The State of Security",
+            "url": "http://www.tripwire.com/state-of-security/feed/"
+        },
+        {
+            "name": "Troy Hunt",
+            "url": "https://www.troyhunt.com/rss/"
+        },
+        {
+            "name": "welivesecurity",
+            "url": "http://feeds.feedburner.com/eset/blog"
+        },
+        {
+            "name": "Wired",
+            "url": "https://www.wired.com/category/security/feed/"
+        },
+        {
+            "name": "ZDNet",
+            "url": "http://www.zdnet.com/blog/security/rss.xml"
+        },
+        {
+            "name": "Hacker News (Top 100+ points)",
+            "url": "https://hnrss.org/top?points=100"
+        },
+        {
+            "name": "BleepingComputer",
+            "url": "https://www.bleepingcomputer.com/feed/"
+        },
+        {
+            "name": "The Hacker News",
+            "url": "https://feeds.feedburner.com/TheHackersNews"
+        },
+        {
+            "name": "TechCrunch",
+            "url": "https://techcrunch.com/feed/"
+        },
+        {
+            "name": "Ars Technica",
+            "url": "http://feeds.arstechnica.com/arstechnica/index"
+        },
+        {
+            "name": "The Verge",
+            "url": "https://www.theverge.com/rss/index.xml"
+        },
+        {
+            "name": "Wired Security",
+            "url": "https://www.wired.com/feed/category/security/latest/rss"
+        },
+        {
+            "name": "Dark Reading",
+            "url": "https://www.darkreading.com/rss.xml"
+        },
+        {
+            "name": "InfoQ",
+            "url": "https://feed.infoq.com/"
+        },
+        {
+            "name": "Slashdot",
+            "url": "http://rss.slashdot.org/Slashdot/slashdotMain"
+        },
+        {
+            "name": "CyberScoop",
+            "url": "https://www.cyberscoop.com/feed/"
+        },
+        {
+            "name": "SecurityWeek",
+            "url": "https://www.securityweek.com/rss"
+        },
+        {
+            "name": "Threatpost",
+            "url": "https://threatpost.com/feed/"
+        },
+        {
+            "name": "Krebs on Security",
+            "url": "https://krebsonsecurity.com/feed/"
+        },
+        {
+            "name": "Schneier on Security",
+            "url": "https://www.schneier.com/blog/atom.xml"
+        },
+        {
+            "name": "Google Project Zero",
+            "url": "https://googleprojectzero.blogspot.com/feeds/posts/default"
+        },
+        {
+            "name": "Naked Security",
+            "url": "https://nakedsecurity.sophos.com/feed/"
+        },
+        {
+            "name": "WeLiveSecurity",
+            "url": "https://www.welivesecurity.com/feed/"
+        },
+        {
+            "name": "CIS (Center for Internet Security)",
+            "url": "https://www.cisecurity.org/feed/"
+        },
+        {
+            "name": "EFF Updates",
+            "url": "https://www.eff.org/rss/updates.xml"
+        }
+    ]
+}

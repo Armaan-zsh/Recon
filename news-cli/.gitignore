@@ -1,0 +1,16 @@
+# Binaries
+recon
+daily
+news-cli
+*.exe
+
+# Build output
+dist/
+
+# Old artifacts
+index.html
+
+# Python
+__pycache__/
+*.pyc
+upgrade_links.py
