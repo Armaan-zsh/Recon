@@ -18,6 +18,7 @@ type AppConfig struct {
 	Keywords      []string `json:"keywords"`
 	SetupComplete bool     `json:"setup_complete"`
 	LastRun       string   `json:"last_run,omitempty"`
+	TorProxy      string   `json:"tor_proxy,omitempty"` // SOCKS5 proxy for .onion searches (e.g. socks5h://127.0.0.1:9050)
 }
 
 // CategoryDef maps a human-readable category to its scoring keywords.
@@ -35,7 +36,7 @@ var AllCategories = []CategoryDef{
 	{Name: "Data Breaches & Leaks", ID: "breaches", Keywords: []string{"breach", "leak", "exposed data", "credential", "dump", "stolen data", "data exposure", "compromised"}},
 	{Name: "Cloud Security", ID: "cloud", Keywords: []string{"cloud security", "aws security", "azure security", "gcp", "misconfiguration", "s3 bucket", "iam", "container escape"}},
 	{Name: "Cryptography", ID: "cryptography", Keywords: []string{"cryptography", "encryption", "tls", "certificate", "pki", "post-quantum", "side-channel", "key exchange"}},
-	{Name: "AI & Machine Learning", ID: "ai", Keywords: []string{"artificial intelligence", "machine learning", "llm", "neural", "gpt", "model", "deep learning", "generative ai", "prompt injection"}},
+	{Name: "AI & Machine Learning", ID: "ai", Keywords: []string{"artificial intelligence", "machine learning", "llm", "neural", "gpt", "deep learning", "generative ai", "prompt injection"}},
 	{Name: "Web Development", ID: "webdev", Keywords: []string{"javascript", "react", "node.js", "frontend", "css", "api", "typescript", "web framework", "next.js"}},
 	{Name: "DevOps & Infrastructure", ID: "devops", Keywords: []string{"kubernetes", "docker", "ci/cd", "terraform", "infrastructure", "sre", "observability", "helm", "gitops"}},
 	{Name: "Privacy & Surveillance", ID: "privacy", Keywords: []string{"privacy", "surveillance", "tracking", "gdpr", "anonymity", "tor", "vpn", "data protection", "spyware"}},

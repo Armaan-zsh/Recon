@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -16,15 +17,11 @@ import (
 //go:embed links.json
 var linksData []byte
 
-// LinksConfig is the raw structure of the embedded links.json dataset.
 type LinksConfig struct {
-	StackExchangeTags []string `json:"stack_exchange_tags"`
-	GithubRepos       []string `json:"github_repos"`
-	Subreddits        []string `json:"subreddits"`
-	EngineeringBlogs  []struct {
+	Links []struct {
 		Name string `json:"name"`
 		Url  string `json:"url"`
-	} `json:"engineering_blogs"`
+	} `json:"links"`
 }
 
 func main() {
@@ -96,7 +93,14 @@ func main() {
 	}
 
 	scheduleCmd.AddCommand(scheduleSetCmd, scheduleDisableCmd, scheduleStatusCmd)
-	rootCmd.AddCommand(initCmd, scheduleCmd)
+	// Dark subcommand
+	darkCmd := &cobra.Command{
+		Use:   "dark [query]",
+		Short: "Search the dark web for intelligence (requires Tor)",
+		RunE:  runDarkSearch,
+	}
+
+	rootCmd.AddCommand(initCmd, scheduleCmd, darkCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -155,55 +159,106 @@ func runDefault(cmd *cobra.Command, args []string) error {
 	}
 
 	var sources []FeedSource
-	for _, blog := range feedsConfig.EngineeringBlogs {
+	for _, blog := range feedsConfig.Links {
 		sources = append(sources, FeedSource{Name: blog.Name, URL: blog.Url})
 	}
-
-	log.Printf("Fetching %d feeds with keywords %v...", len(sources), keywords)
-
-	// Fetch
-	result := FetchFeeds(context.Background(), sources, keywords, strictFilter)
-
-	// Sort: highest score first, then newest
-	sort.Slice(result.Articles, func(i, j int) bool {
-		if result.Articles[i].Score == result.Articles[j].Score {
-			return result.Articles[i].Published.After(result.Articles[j].Published)
-		}
-		return result.Articles[i].Score > result.Articles[j].Score
-	})
-
-	// Cap at 50
-	topN := 50
-	if len(result.Articles) < topN {
-		topN = len(result.Articles)
-	}
-	topArticles := result.Articles[:topN]
-
-	log.Printf("Fetched %d articles from %d/%d feeds in %.1fs",
-		len(topArticles), result.FetchedFeeds, result.TotalFeeds, result.Duration.Seconds())
-
-	// Record last run
-	_ = RecordLastRun(cfg)
 
 	// Output mode
 	jsonMode, _ := cmd.Flags().GetBool("json")
 	browserMode, _ := cmd.Flags().GetBool("browser")
 
-	if jsonMode {
-		data, _ := json.MarshalIndent(topArticles, "", "  ")
-		fmt.Println(string(data))
-		return nil
-	}
+	if jsonMode || browserMode {
+		stopSpinner := make(chan bool)
+		go func() {
+			chars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+			i := 0
+			for {
+				select {
+				case <-stopSpinner:
+					fmt.Fprintf(os.Stderr, "\r\033[K")
+					return
+				default:
+					fmt.Fprintf(os.Stderr, "\r\033[38;2;249;115;22m%s\033[0m Gathering Cyber Intelligence (%d feeds)...", chars[i%len(chars)], len(sources))
+					i++
+					time.Sleep(100 * time.Millisecond)
+				}
+			}
+		}()
 
-	if browserMode {
-		htmlContent, err := renderHTML(topArticles)
-		if err != nil {
-			return fmt.Errorf("failed to generate HTML: %w", err)
+		result := FetchFeeds(context.Background(), sources, keywords, strictFilter, cfg)
+		stopSpinner <- true
+		
+		sort.Slice(result.Articles, func(i, j int) bool {
+			if result.Articles[i].Score == result.Articles[j].Score {
+				return result.Articles[i].Published.After(result.Articles[j].Published)
+			}
+			return result.Articles[i].Score > result.Articles[j].Score
+		})
+		
+		topN := 50
+		if len(result.Articles) < topN {
+			topN = len(result.Articles)
 		}
-		serveAndOpen(htmlContent)
+		topArticles := result.Articles[:topN]
+		
+		// We don't need log.Printf here because the output handles it cleanly or is JSON.
+
+		if jsonMode {
+			data, _ := json.MarshalIndent(topArticles, "", "  ")
+			fmt.Println(string(data))
+			return nil
+		}
+
+		if browserMode {
+			htmlContent, err := renderHTML(topArticles)
+			if err != nil {
+				return fmt.Errorf("failed to generate HTML: %w", err)
+			}
+			serveAndOpen(htmlContent)
+			return nil
+		}
+	}
+
+	// Default: Async TUI mode
+	return runTUI(sources, keywords, strictFilter, cfg)
+}
+
+func runDarkSearch(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("please provide a search query")
+	}
+	query := strings.Join(args, " ")
+
+	cfg, _ := LoadConfig()
+	if cfg == nil || cfg.TorProxy == "" {
+		fmt.Println("⚠ Tor Proxy not configured in config.json. Please set 'tor_proxy' (e.g. socks5h://127.0.0.1:9050)")
 		return nil
 	}
 
-	// Default: TUI mode
-	return runTUI(topArticles, result)
+	fmt.Printf("🕵  Searching Dark Web for: %s...\n", query)
+
+	// In a real implementation, we'd scrape Ahmia/OnionLand here.
+	// For now, we'll use our fetcher to hit known Onion research feeds if we have any,
+	// or provide a placeholder for the integration.
+	
+	// Example Onion Engine Search (Ahmia)
+	ahmiaURL := fmt.Sprintf("http://juhanurmihxlp77nkq76byazcldy2hlmovfu2epvl5ankdibsot4csyd.onion/search/?q=%s", query)
+	
+	log.Printf("Connecting to Ahmia via %s...", cfg.TorProxy)
+	
+	sources := []FeedSource{
+		{Name: "Ahmia Search", URL: ahmiaURL},
+	}
+	
+	// Since Ahmia doesn't return RSS easily, we'll eventually need a dedicated scraper.
+	// But for this version, we'll try to fetch the page content.
+	
+	result := FetchFeeds(context.Background(), sources, []string{query}, false, cfg)
+	
+	if len(result.Articles) == 0 {
+		fmt.Println("No results found or Tor proxy unreachable.")
+		return nil
+	}
+
+	return runTUI(sources, []string{query}, false, cfg)
 }
