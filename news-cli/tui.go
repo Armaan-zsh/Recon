@@ -5,40 +5,56 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
+	readability "github.com/go-shiori/go-readability"
+
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
 // Styles
 var (
-	accentColor    = lipgloss.Color("#f97316")
-	dimColor       = lipgloss.Color("#a8a29e")
-	bgColor        = lipgloss.Color("#1c1917")
-	panelColor     = lipgloss.Color("#292524")
-	borderColor    = lipgloss.Color("#44403c")
-	titleStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f5f5f4"))
-	selectedStyle  = lipgloss.NewStyle().Bold(true).Foreground(accentColor)
-	metaStyle      = lipgloss.NewStyle().Foreground(dimColor)
-	sourceStyle    = lipgloss.NewStyle().Foreground(accentColor).Bold(true).Transform(strings.ToUpper)
-	headerStyle    = lipgloss.NewStyle().Bold(true).Foreground(accentColor).Padding(1, 2)
-	statusStyle    = lipgloss.NewStyle().Background(panelColor).Foreground(dimColor).Padding(0, 2)
-	previewBorder  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(borderColor).Padding(1, 2)
+	accentColor   = lipgloss.Color("#f97316")
+	dimColor      = lipgloss.Color("#a8a29e")
+	panelColor    = lipgloss.Color("#292524")
+	borderColor   = lipgloss.Color("#44403c")
+	titleStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f5f5f4"))
+	selectedStyle = lipgloss.NewStyle().Bold(true).Foreground(accentColor)
+	metaStyle     = lipgloss.NewStyle().Foreground(dimColor)
+	sourceStyle   = lipgloss.NewStyle().Foreground(accentColor).Bold(true).Transform(strings.ToUpper)
+	headerStyle   = lipgloss.NewStyle().Bold(true).Foreground(accentColor).Padding(1, 2)
+	statusStyle   = lipgloss.NewStyle().Background(panelColor).Foreground(dimColor).Padding(0, 1)
 )
 
+// Messages
+type articleContentMsg struct {
+	content string
+	err     error
+}
+
 type tuiModel struct {
-	articles []Article
-	result   FetchResult
-	cursor   int
-	height   int
-	width    int
-	scroll   int // scroll offset for article list
+	articles    []Article
+	result      FetchResult
+	cursor      int
+	height      int
+	width       int
+	scroll      int
+	viewport    viewport.Model
+	vpReady     bool
+	vpContent   string
+	loading     bool
+	activePane  int // 0 = list, 1 = reader
+	lastLoaded  int // index of last loaded article (-1 = none)
 }
 
 func runTUI(articles []Article, result FetchResult) error {
 	m := tuiModel{
-		articles: articles,
-		result:   result,
+		articles:   articles,
+		result:     result,
+		lastLoaded: -1,
 	}
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, err := p.Run()
@@ -49,45 +65,142 @@ func (m tuiModel) Init() tea.Cmd {
 	return nil
 }
 
+// fetchArticleContent fetches URL and extracts readable text.
+func fetchArticleContent(url string, width int) tea.Cmd {
+	return func() tea.Msg {
+		article, err := readability.FromURL(url, 15*time.Second)
+		if err != nil {
+			return articleContentMsg{err: err}
+		}
+
+		// Build markdown from extracted content
+		var md strings.Builder
+		md.WriteString(fmt.Sprintf("# %s\n\n", article.Title))
+		if article.Byline != "" {
+			md.WriteString(fmt.Sprintf("*%s*\n\n", article.Byline))
+		}
+		md.WriteString("---\n\n")
+		md.WriteString(article.TextContent)
+
+		// Render with glamour
+		renderWidth := width - 6
+		if renderWidth < 40 {
+			renderWidth = 40
+		}
+
+		renderer, err := glamour.NewTermRenderer(
+			glamour.WithAutoStyle(),
+			glamour.WithWordWrap(renderWidth),
+		)
+		if err != nil {
+			return articleContentMsg{content: md.String()}
+		}
+
+		rendered, err := renderer.Render(md.String())
+		if err != nil {
+			return articleContentMsg{content: md.String()}
+		}
+
+		return articleContentMsg{content: rendered}
+	}
+}
+
 func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 
+		vpWidth := m.width/2 - 2
+		if vpWidth < 30 {
+			vpWidth = 30
+		}
+		vpHeight := m.height - 4
+		if vpHeight < 5 {
+			vpHeight = 5
+		}
+
+		if !m.vpReady {
+			m.viewport = viewport.New(vpWidth, vpHeight)
+			m.viewport.SetContent("  Press Enter on an article to read it here.\n\n  Tab to switch panes. q to quit.")
+			m.vpReady = true
+		} else {
+			m.viewport.Width = vpWidth
+			m.viewport.Height = vpHeight
+		}
+
+	case articleContentMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.viewport.SetContent(fmt.Sprintf("\n  ⚠ Could not fetch article: %v\n\n  Press 'o' to open in browser instead.", msg.err))
+		} else {
+			m.vpContent = msg.content
+			m.viewport.SetContent(msg.content)
+			m.viewport.GotoTop()
+		}
+
 	case tea.KeyMsg:
-		switch msg.String() {
+		key := msg.String()
+
+		// Global keys
+		switch key {
 		case "q", "ctrl+c":
 			return m, tea.Quit
-		case "j", "down":
-			if m.cursor < len(m.articles)-1 {
-				m.cursor++
-				// Auto-scroll
-				visibleItems := m.height - 6 // header + status bar
-				if m.cursor-m.scroll >= visibleItems {
-					m.scroll++
-				}
-			}
-		case "k", "up":
-			if m.cursor > 0 {
-				m.cursor--
-				if m.cursor < m.scroll {
-					m.scroll--
-				}
-			}
-		case "enter":
+		case "tab":
+			m.activePane = 1 - m.activePane // Toggle 0 <-> 1
+			return m, nil
+		case "o":
+			// Open current article in browser
 			if m.cursor < len(m.articles) {
 				openInBrowser(m.articles[m.cursor].Link)
 			}
-		case "g":
-			m.cursor = 0
-			m.scroll = 0
-		case "G":
-			m.cursor = len(m.articles) - 1
-			visibleItems := m.height - 6
-			if m.cursor >= visibleItems {
-				m.scroll = m.cursor - visibleItems + 1
+			return m, nil
+		}
+
+		if m.activePane == 0 {
+			// List pane controls
+			switch key {
+			case "j", "down":
+				if m.cursor < len(m.articles)-1 {
+					m.cursor++
+					visibleItems := (m.height - 4) / 2
+					if visibleItems < 3 {
+						visibleItems = 3
+					}
+					if m.cursor-m.scroll >= visibleItems {
+						m.scroll++
+					}
+				}
+			case "k", "up":
+				if m.cursor > 0 {
+					m.cursor--
+					if m.cursor < m.scroll {
+						m.scroll--
+					}
+				}
+			case "g":
+				m.cursor = 0
+				m.scroll = 0
+			case "G":
+				m.cursor = len(m.articles) - 1
+				visibleItems := (m.height - 4) / 2
+				if m.cursor >= visibleItems {
+					m.scroll = m.cursor - visibleItems + 1
+				}
+			case "enter":
+				if m.cursor < len(m.articles) && m.cursor != m.lastLoaded && !m.loading {
+					m.loading = true
+					m.lastLoaded = m.cursor
+					m.viewport.SetContent("\n  ⏳ Fetching article...")
+					vpWidth := m.width/2 - 4
+					return m, fetchArticleContent(m.articles[m.cursor].Link, vpWidth)
+				}
 			}
+		} else {
+			// Reader pane — pass keys to viewport for scrolling
+			var cmd tea.Cmd
+			m.viewport, cmd = m.viewport.Update(msg)
+			return m, cmd
 		}
 	}
 
@@ -95,33 +208,30 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m tuiModel) View() string {
-	if m.width == 0 {
+	if m.width == 0 || !m.vpReady {
 		return "Loading..."
 	}
 
 	var b strings.Builder
 
 	// Header
-	header := headerStyle.Render("RECON — Daily Cyber & Tech Intelligence")
+	header := headerStyle.Render("RECON")
 	b.WriteString(header)
 	b.WriteString("\n")
 
 	if len(m.articles) == 0 {
-		b.WriteString("\n  No articles found matching your keywords.\n")
-		b.WriteString("\n  Try: recon --tags vulnerability,malware\n")
+		b.WriteString("\n  No articles found. Try: recon --tags vulnerability,malware\n")
 		return b.String()
 	}
 
-	// Calculate visible area
 	listWidth := m.width / 2
-	if listWidth < 40 {
-		listWidth = 40
+	if listWidth < 30 {
+		listWidth = 30
 	}
-	previewWidth := m.width - listWidth - 4
 
-	visibleItems := m.height - 6
-	if visibleItems < 5 {
-		visibleItems = 5
+	visibleItems := (m.height - 4) / 2
+	if visibleItems < 3 {
+		visibleItems = 3
 	}
 
 	// Build article list
@@ -134,47 +244,74 @@ func (m tuiModel) View() string {
 	for i := m.scroll; i < end; i++ {
 		a := m.articles[i]
 		title := a.Title
-		if len(title) > listWidth-6 {
-			title = title[:listWidth-9] + "..."
+		maxTitleLen := listWidth - 8
+		if maxTitleLen < 20 {
+			maxTitleLen = 20
+		}
+		if len(title) > maxTitleLen {
+			title = title[:maxTitleLen-3] + "..."
 		}
 
-		var line string
-		if i == m.cursor {
-			line = selectedStyle.Render(fmt.Sprintf("  ▸ %s", title))
+		prefix := "  "
+		if m.activePane == 0 && i == m.cursor {
+			prefix = "▸ "
+			line := selectedStyle.Render(prefix + title)
+			listLines = append(listLines, line)
+		} else if i == m.cursor {
+			line := titleStyle.Render(prefix + title)
+			listLines = append(listLines, line)
 		} else {
-			line = titleStyle.Render(fmt.Sprintf("    %s", title))
+			line := metaStyle.Render(prefix + title)
+			listLines = append(listLines, line)
 		}
-		listLines = append(listLines, line)
 
-		meta := metaStyle.Render(fmt.Sprintf("      %s · Score: %d", sourceStyle.Render(a.SourceName), a.Score))
-		listLines = append(listLines, meta)
+		src := sourceStyle.Render(a.SourceName)
+		score := metaStyle.Render(fmt.Sprintf(" · %d", a.Score))
+		listLines = append(listLines, "  "+src+score)
 	}
 
 	listContent := strings.Join(listLines, "\n")
 
-	// Build preview pane
-	var previewContent string
-	if m.cursor < len(m.articles) {
-		a := m.articles[m.cursor]
-		pTitle := titleStyle.Copy().Width(previewWidth - 4).Render(a.Title)
-		pSource := sourceStyle.Render(a.SourceName) + metaStyle.Render(fmt.Sprintf(" · %s · Score: %d", a.Published.Format("Jan 02, 2006"), a.Score))
-		pDesc := metaStyle.Copy().Width(previewWidth - 4).Render(a.Description)
-		pLink := lipgloss.NewStyle().Foreground(accentColor).Underline(true).Render(a.Link)
-
-		previewContent = fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s", pTitle, pSource, pDesc, pLink)
+	// Pad list to fill height
+	listLineCount := len(listLines)
+	targetHeight := m.height - 4
+	for listLineCount < targetHeight {
+		listContent += "\n"
+		listLineCount++
 	}
 
-	preview := previewBorder.Width(previewWidth).Height(visibleItems * 2).Render(previewContent)
+	// Build right pane with border
+	readerStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Width(m.width - listWidth - 4).
+		Height(m.height - 4)
+
+	if m.activePane == 1 {
+		readerStyle = readerStyle.BorderForeground(accentColor)
+	}
+
+	reader := readerStyle.Render(m.viewport.View())
 
 	// Combine columns
-	layout := lipgloss.JoinHorizontal(lipgloss.Top, listContent, "  ", preview)
+	layout := lipgloss.JoinHorizontal(lipgloss.Top, listContent, " ", reader)
 	b.WriteString(layout)
 	b.WriteString("\n")
 
 	// Status bar
+	paneIndicator := "[LIST]"
+	if m.activePane == 1 {
+		paneIndicator = "[READER]"
+	}
+	loadingIndicator := ""
+	if m.loading {
+		loadingIndicator = " ⏳"
+	}
+
 	status := statusStyle.Width(m.width).Render(
-		fmt.Sprintf(" %d articles | %d/%d feeds | %.1fs | j/k:navigate Enter:open q:quit",
-			len(m.articles), m.result.FetchedFeeds, m.result.TotalFeeds, m.result.Duration.Seconds()),
+		fmt.Sprintf(" %d articles | %d/%d feeds | %.1fs | %s%s | j/k:nav Enter:read Tab:switch o:browser q:quit",
+			len(m.articles), m.result.FetchedFeeds, m.result.TotalFeeds, m.result.Duration.Seconds(),
+			paneIndicator, loadingIndicator),
 	)
 	b.WriteString(status)
 
