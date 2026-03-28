@@ -138,32 +138,6 @@ Some of the 570+ sources include:
 
 **Engineering:** Google, Cloudflare, Netflix, Stripe, Shopify, Discord, GitHub, and 400+ more
 
-## Project Structure
-
-```
-news-cli/
-├── main.go           # CLI entry, Cobra subcommands
-├── config.go         # XDG config, categories, timezones
-├── fetcher.go        # Concurrent fetcher + multi-signal scorer
-├── setup.go          # First-run interactive wizard (huh)
-├── schedule.go       # systemd timer management
-├── renderer.go       # HTML browser view + ephemeral server
-├── tui.go            # Bubble Tea terminal UI
-├── links.json        # 570+ embedded feeds
-├── Makefile           # build / install / release
-├── go.mod
-└── go.sum
-```
-
-## Tech Stack
-
-- **Language:** Go
-- **Feeds:** [gofeed](https://github.com/mmcdole/gofeed)
-- **CLI:** [Cobra](https://github.com/spf13/cobra)
-- **TUI:** [Bubble Tea](https://github.com/charmbracelet/bubbletea) + [Lipgloss](https://github.com/charmbracelet/lipgloss)
-- **Setup wizard:** [Huh](https://github.com/charmbracelet/huh)
-- **Concurrency:** [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup)
-
 ## License
 
-MIT
+[MIT](LICENSE)
