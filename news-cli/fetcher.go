@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -25,142 +28,17 @@ type Article struct {
 	Title       string
 	Link        string
 	Description string
+	Content     string // Raw content for extraction
 	Published   time.Time
 	SourceName  string
 	Score       int
 }
 
-// HighValueSources are known authoritative vulnerability research sources.
-// Articles from these sources get a bonus score.
-var HighValueSources = map[string]bool{
-	"Simon Willison":              true,
-	"George Hotz (geohot)":        true,
-	"Julia Evans (jvns)":          true,
-	"Dan Luu":                     true,
-	"Filippo Valsorda":            true,
-	"Hanno Böck":                  true,
-	"Tavis Ormandy":               true,
-	"The Grugq":                   true,
-	"Qualys Threat Research":      true,
-	"Rapid7 Blog":                 true,
-	"CrowdStrike":                 true,
-	"Palo Alto Unit 42":           true,
-	"Mandiant (Google Cloud)":     true,
-	"Zero Day Initiative":         true,
-	"Cisco Talos":                 true,
-	"Microsoft MSRC":              true,
-	"SANS ISC":                    true,
-	"Google Project Zero":         true,
-	"Trail of Bits":               true,
-	"Krebs on Security":           true,
-	"Schneier on Security":        true,
-	"Elastic Security Labs":       true,
-	"SentinelOne Labs":            true,
-	"Check Point Research":        true,
-	"PortSwigger Research":        true,
-	"CISA Alerts":                 true,
-	"Signal Blog":                 true,
-	"Phoronix (Linux)":            true,
-	"The Register (Security)":     true,
-	"BleepingComputer":            true,
-	"The Hacker News":             true,
-	"Platformer":                  true,
-}
-
-// AntiKeywords cause an article to be immediately scored 0.
-// These filter out real-world politics / physical security noise.
-var AntiKeywords = []string{
-	"police", " ice ", "border patrol", "law enforcement",
-	"physical security", "guard ", "officer", "immigrat",
-	"deportat", "customs", "border wall",
-}
-
-// AdvisoryPatterns detect robotic CVE/advisory content that isn't real blog writing.
-var advisoryPattern = regexp.MustCompile(`(?i)^(CVE-\d|ZDI-\d|[A-Z]+-SA-|RHSA-|DSA-|USN-|GHSA-)`)
-var cvePattern = regexp.MustCompile(`(?i)CVE-\d{4}-\d+`)
-
-// BlogQualityKeywords indicate deep, insightful analysis worth reading.
-var BlogQualityKeywords = []string{
-	"how i", "deep dive", "behind the scenes", "lessons learned",
-	"building", "designing", "architecture", "reverse engineer",
-	"writeup", "write-up", "walkthrough", "tutorial",
-	"case study", "post-mortem", "postmortem", "retrospective",
-	"why we", "how we", "what i learned", "analysis",
-	"investigation", "explained", "demystif", "internals",
-	"under the hood", "from scratch",
-}
-
-// ScoreArticle applies multi-signal scoring that PRIORITIZES high-quality
-// blog posts and research over robotic CVE advisories.
-func ScoreArticle(a *Article, keywords []string) {
-	title := strings.ToLower(a.Title)
-	desc := strings.ToLower(a.Description)
-	text := title + " " + desc
-
-	// Anti-keyword check: immediate disqualification
-	for _, ak := range AntiKeywords {
-		if strings.Contains(text, ak) {
-			a.Score = 0
-			return
-		}
-	}
-
-	score := 0
-
-	// === PENALTY: Robotic advisory titles ===
-	// Titles starting with CVE-XXXX, ZDI-XX, RHSA- etc. are machine-generated noise
-	if advisoryPattern.MatchString(a.Title) {
-		score -= 30
-	}
-
-	// === KEYWORD MATCHING (reduced weight) ===
-	matchCount := 0
-	for _, kw := range keywords {
-		kwLower := strings.ToLower(kw)
-		if strings.Contains(title, kwLower) {
-			score += 3 // Multi-keyword relevance is less important than narrative quality
-			matchCount++
-		} else if strings.Contains(desc, kwLower) {
-			score += 1 
-			matchCount++
-		}
-	}
-	// Cap keyword accumulation — prevents CVE descriptions that match 20 keywords
-	// from dominating over a blog post matching 3
-	if matchCount > 5 {
-		score -= (matchCount - 5) * 2
-	}
-
-	// === BLOG QUALITY BONUS (the real signal) ===
-	for _, bq := range BlogQualityKeywords {
-		if strings.Contains(text, bq) {
-			score += 12 // Blog quality is worth WAY more than keyword spam
-			break       // Only count once
-		}
-	}
-
-	// Narrative title bonus — longer titles indicate real articles, not "CVE-2026-1234"
-	if len(a.Title) > 60 {
-		score += 5
-	}
-
-	// High-value source (Researcher/GOAT) bonus — the most important signal
-	if HighValueSources[a.SourceName] {
-		score += 25 // Elite researchers are the source of truth
-	}
-
-	// === MINOR BONUSES (kept low so they don't dominate) ===
-	// Zero-day mentions in actual blog posts (not advisories) are interesting
-	if !advisoryPattern.MatchString(a.Title) {
-		if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {
-			score += 5
-		}
-		if strings.Contains(text, "breach") || strings.Contains(text, "leak") {
-			score += 4
-		}
-	}
-
-	a.Score = score
+// Hash returns a unique SHA256 identifier for the article based on its link.
+func (a Article) Hash() string {
+	h := sha256.New()
+	h.Write([]byte(a.Link))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // FetchResult holds the results from fetching all feeds.
@@ -171,118 +49,212 @@ type FetchResult struct {
 	Duration     time.Duration
 }
 
-// FetchFeeds concurrently fetches all provided feed sources using errgroup
-// with bounded concurrency. It filters by recency, deduplicates, and scores.
-func FetchFeeds(ctx context.Context, sources []FeedSource, keywords []string, strictFilter bool, cfg *AppConfig) FetchResult {
-	start := time.Now()
-	// Expanded to 7-day cutoff for weekly research deep-dives
-	cutoff := time.Now().Add(-7 * 24 * time.Hour)
+// Global patterns for scoring
+var (
+	advisoryPattern = regexp.MustCompile(`(?i)^(CVE-\d|ZDI-\d|[A-Z]+-SA-|RHSA-|DSA-|USN-|GHSA-)`)
+	cvePattern      = regexp.MustCompile(`(?i)CVE-\d{4}-\d+`)
+)
 
+// FetchAll synchronizes all feeds concurrently and updates the database.
+func FetchAll(ctx context.Context, cfg *AppConfig, db *IntelligenceDB) (FetchResult, error) {
+	start := time.Now()
+	feeds, err := LoadFeeds()
+	if err != nil {
+		return FetchResult{}, err
+	}
+
+	extractor := NewExtractor()
 	var (
-		articles   []Article
-		mu         sync.Mutex
-		seenTitles = make(map[string]bool)
-		fetched    int
+		articles []Article
+		mu       sync.Mutex
+		fetched  int
 	)
 
 	g, ctx := errgroup.WithContext(ctx)
-	g.SetLimit(100) // Doubled concurrency for 600+ feeds speed
+	// Scaling to 500 workers for the 1,900+ feed Motherlode
+	g.SetLimit(500)
 
-	for _, src := range sources {
-		src := src // Pin for closure
+	// cutoff for "Freshness" logic (7 days)
+	cutoff := time.Now().Add(-7 * 24 * time.Hour)
+
+	for _, src := range feeds {
+		src := src
 		g.Go(func() error {
-			fp := gofeed.NewParser()
-			fp.UserAgent = "Recon/2.0 (+https://github.com/recon-cli)"
-
-			// Support Tor proxy for .onion feeds
-			if strings.HasSuffix(strings.Split(src.URL, "/")[2], ".onion") && cfg != nil && cfg.TorProxy != "" {
-				proxyURL, err := url.Parse(cfg.TorProxy)
-				if err == nil {
-					dialer, err := proxy.FromURL(proxyURL, proxy.Direct)
-					if err == nil {
-						fp.Client = &http.Client{
-							Transport: &http.Transport{
-								Dial: dialer.Dial,
-							},
-							Timeout: 30 * time.Second, // Onions are slow
-						}
-					}
-				}
-			}
-
-			// Moderate 8s timeout per feed for faster gathering
-			fetchCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
-			defer cancel()
-
-			feed, err := fp.ParseURLWithContext(src.URL, fetchCtx)
+			feedArticles, err := fetchSingleFeed(ctx, src, cfg)
 			if err != nil {
-				return nil // Silently skip broken feeds, don't abort the group
+				return nil // Skip broken feeds
 			}
 
 			mu.Lock()
 			fetched++
 			mu.Unlock()
 
-			var feedArticles []Article
-			for _, item := range feed.Items {
-				pubTime := item.PublishedParsed
-				if pubTime == nil {
-					pubTime = item.UpdatedParsed
-				}
-				if pubTime == nil {
-					now := time.Now()
-					pubTime = &now
-				}
-
-				if !pubTime.After(cutoff) {
+			validArticles := []Article{}
+			for _, a := range feedArticles {
+				if !a.Published.After(cutoff) {
 					continue
 				}
 
-				desc := item.Description
-				if len(desc) > 300 {
-					desc = desc[:300] + "..."
+				ScoreArticle(&a, cfg)
+				if a.Score > 5 {
+					validArticles = append(validArticles, a)
+					
+					// Real-time Intelligence Extraction and Persistence
+					if db != nil {
+						ents := extractor.ExtractEntities(a)
+						_ = db.SaveArticle(a, ents)
+					}
 				}
-
-				normalizedTitle := strings.ToLower(strings.TrimSpace(item.Title))
-
-				mu.Lock()
-				if seenTitles[normalizedTitle] {
-					mu.Unlock()
-					continue
-				}
-				seenTitles[normalizedTitle] = true
-				mu.Unlock()
-
-				a := Article{
-					Title:       item.Title,
-					Link:        item.Link,
-					Description: desc,
-					Published:   *pubTime,
-					SourceName:  src.Name,
-				}
-				ScoreArticle(&a, keywords)
-
-				if strictFilter && a.Score <= 0 {
-					continue
-				}
-
-				feedArticles = append(feedArticles, a)
 			}
 
 			mu.Lock()
-			articles = append(articles, feedArticles...)
+			articles = append(articles, validArticles...)
 			mu.Unlock()
-
 			return nil
 		})
 	}
 
-	_ = g.Wait() // We don't propagate errors since we silently skip broken feeds
+	_ = g.Wait()
+
+	// De-duplicate in memory for the TUI display
+	clusterer := NewClusterer(0.85) // High threshold for deduplication
+	clusters := clusterer.ClusterArticles(articles)
+	
+	finalArticles := []Article{}
+	for _, c := range clusters {
+		finalArticles = append(finalArticles, c.PrimaryArticle)
+	}
+
+	// Sort by Score desc, then Date desc
+	sort.Slice(finalArticles, func(i, j int) bool {
+		if finalArticles[i].Score == finalArticles[j].Score {
+			return finalArticles[i].Published.After(finalArticles[j].Published)
+		}
+		return finalArticles[i].Score > finalArticles[j].Score
+	})
 
 	return FetchResult{
-		Articles:     articles,
-		TotalFeeds:   len(sources),
+		Articles:     finalArticles,
+		TotalFeeds:   len(feeds),
 		FetchedFeeds: fetched,
 		Duration:     time.Since(start),
+	}, nil
+}
+
+func fetchSingleFeed(ctx context.Context, source FeedSource, cfg *AppConfig) ([]Article, error) {
+	client := &http.Client{Timeout: 5 * time.Second}
+	fp := gofeed.NewParser()
+	fp.UserAgent = "Recon/2.0 (+https://github.com/recon-cli)"
+
+	// Support Tor proxy for .onion feeds
+	if strings.HasSuffix(strings.Split(source.URL, "/")[2], ".onion") && cfg != nil && cfg.TorProxy != "" {
+		proxyURL, err := url.Parse(cfg.TorProxy)
+		if err == nil {
+			dialer, err := proxy.FromURL(proxyURL, proxy.Direct)
+			if err == nil {
+				client.Transport = &http.Transport{Dial: dialer.Dial}
+				client.Timeout = 20 * time.Second
+			}
+		}
 	}
+	fp.Client = client
+
+	feed, err := fp.ParseURLWithContext(source.URL, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	articles := []Article{}
+	for _, item := range feed.Items {
+		pubDate := time.Now()
+		if item.PublishedParsed != nil {
+			pubDate = *item.PublishedParsed
+		}
+
+		desc := item.Description
+		if len(desc) > 500 {
+			desc = desc[:500] + "..."
+		}
+
+		articles = append(articles, Article{
+			Title:       item.Title,
+			Link:        item.Link,
+			Description: desc,
+			Content:     item.Content,
+			Published:   pubDate,
+			SourceName:  source.Name,
+		})
+	}
+
+	return articles, nil
+}
+
+func ScoreArticle(a *Article, cfg *AppConfig) {
+	score := 0
+	text := strings.ToLower(a.Title + " " + a.Description)
+
+	// Principal keyword scoring
+	if cfg != nil {
+		for _, kw := range cfg.Keywords {
+			if strings.Contains(text, strings.ToLower(kw)) {
+				score += 3
+			}
+		}
+	}
+
+	// Double penalty for robotic advisory titles: -30
+	if advisoryPattern.MatchString(a.Title) {
+		score -= 30
+	}
+
+	// CVE ID presence bonus
+	if cvePattern.MatchString(a.Title) {
+		score += 15
+	}
+
+	// Expert blog quality bonuses
+	if strings.Contains(text, "how i") || strings.Contains(text, "deep dive") || strings.Contains(text, "lessons learned") || strings.Contains(text, "internals of") {
+		score += 12
+	}
+
+	// Narrative title length bonus
+	if len(a.Title) > 60 {
+		score += 5
+	}
+
+	// High-value source (Researcher/GOAT) bonus
+	if HighValueSources[a.SourceName] {
+		score += 25
+	}
+
+	// Zero-day detections
+	if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {
+		score += 5
+	}
+
+	a.Score = score
+}
+
+// HighValueSources are known authoritative technical sources.
+var HighValueSources = map[string]bool{
+	"Simon Willison":          true,
+	"George Hotz (geohot)":    true,
+	"Julia Evans (jvns)":      true,
+	"Dan Luu":                 true,
+	"Filippo Valsorda":        true,
+	"Tavis Ormandy":           true,
+	"Qualys Threat Research":  true,
+	"Rapid7 Blog":             true,
+	"CrowdStrike":             true,
+	"Palo Alto Unit 42":       true,
+	"Mandiant (Google Cloud)": true,
+	"Cisco Talos":             true,
+	"Krebs on Security":       true,
+	"Phoronix (Linux)":        true,
+	"The Hacker News":         true,
+	"Elastic Security Labs":   true,
+	"Palo Alto Networks":      true,
+	"Check Point Research":    true,
+	"BleepingComputer":        true,
+	"The Register (Security)": true,
 }
