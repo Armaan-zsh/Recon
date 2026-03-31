@@ -73,6 +73,11 @@ func InitDB() (*IntelligenceDB, error) {
 		seen_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
+	CREATE TABLE IF NOT EXISTS system_state (
+		key TEXT PRIMARY KEY,
+		value TEXT
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published_at);
 	CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
 	`
@@ -193,5 +198,28 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
 		articles = append(articles, a)
 	}
 	return articles, nil
+}
+
+// GetLastSyncTime retrieves the last successful fetch timestamp to enable debouncing.
+func (i *IntelligenceDB) GetLastSyncTime() time.Time {
+	var val string
+	err := i.db.QueryRow("SELECT value FROM system_state WHERE key = 'last_sync'").Scan(&val)
+	if err != nil {
+		return time.Time{} // Return zero-time if never synced
+	}
+	t, err := time.Parse(time.RFC3339, val)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// SetLastSyncTime updates the sync debounce lock.
+func (i *IntelligenceDB) SetLastSyncTime(t time.Time) error {
+	_, err := i.db.Exec(`
+		INSERT INTO system_state (key, value) VALUES ('last_sync', ?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+	`, t.Format(time.RFC3339))
+	return err
 }
 

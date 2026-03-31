@@ -32,7 +32,6 @@ func main() {
 	}
 
 	rootCmd.Flags().Bool("json", false, "Output results as JSON to stdout")
-	rootCmd.Flags().Bool("sync", false, "Synchronize feeds before opening TUI")
 	rootCmd.Flags().Bool("browser", false, "Open results in browser sidebar view instead of TUI")
 
 	// Subcommands
@@ -42,40 +41,7 @@ func main() {
 		RunE:  func(cmd *cobra.Command, args []string) error { _, err := RunSetupWizard(); return err },
 	}
 
-	syncCmd := &cobra.Command{
-		Use:   "sync",
-		Short: "Background synchronize all 2,500+ elite feeds",
-		RunE:  runSync,
-	}
-
-	dashCmd := &cobra.Command{
-		Use:   "dash",
-		Short: "Open the high-level Intelligence Dashboard",
-		RunE:  func(cmd *cobra.Command, args []string) error {
-			db, err := InitDB()
-			var articles []Article
-			if err == nil {
-				articles, _ = db.GetRecentArticles(400)
-				defer db.Close()
-			}
-			return runGridDashboard(articles)
-		},
-	}
-
-	scheduleCmd := &cobra.Command{Use: "schedule", Short: "Manage auto-run schedule"}
-	// ... (rest of schedule logic from before, omitted for brevity but I'll add the sets)
-	scheduleSetCmd := &cobra.Command{
-		Use:   "set",
-		Short: "Set auto-run time",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			t, _ := cmd.Flags().GetString("time")
-			return ScheduleInstall(t)
-		},
-	}
-	scheduleSetCmd.Flags().String("time", "07:00", "24h format")
-	scheduleCmd.AddCommand(scheduleSetCmd)
-
-	rootCmd.AddCommand(initCmd, syncCmd, dashCmd, scheduleCmd)
+	rootCmd.AddCommand(initCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -93,12 +59,6 @@ func runDefault(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, "⚠ Nexus DB unavailable: %v\n", err)
 	} else {
 		defer db.Close()
-	}
-
-	doSync, _ := cmd.Flags().GetBool("sync")
-	if doSync {
-		fmt.Fprintf(os.Stderr, "🔄 Syncing Motherlode (2,500 feeds)...\n")
-		_, _ = FetchAll(context.Background(), cfg, db)
 	}
 
 	// Fetch recent articles from DB (Zero-Latency)
@@ -132,21 +92,4 @@ func runDefault(cmd *cobra.Command, args []string) error {
 	}
 
 	return RunTUI(articles, cfg)
-}
-
-func runSync(cmd *cobra.Command, args []string) error {
-	cfg, _ := LoadConfig()
-	db, err := InitDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	fmt.Fprintf(os.Stderr, "📡 Synchronizing Intelligence Nexus...\n")
-	res, err := FetchAll(context.Background(), cfg, db)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(os.Stderr, "✓ Sync Complete. %d items indexed in %v\n", len(res.Articles), res.Duration)
-	return nil
 }

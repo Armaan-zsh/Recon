@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -46,6 +48,44 @@ type tuiModel struct {
 	nexusView    bool
 	nexusText    string
 	spinner      spinner.Model
+	isSyncing    bool
+	syncStatus   string
+}
+
+type syncCompleteMsg struct {
+	articles []Article
+	newCount int
+}
+
+func performBackgroundSync(db *IntelligenceDB, cfg *AppConfig, currentHashes map[string]bool) tea.Cmd {
+	return func() tea.Msg {
+		if db == nil {
+			return nil
+		}
+
+		lastSync := db.GetLastSyncTime()
+		if time.Since(lastSync) < 15*time.Minute {
+			return nil // Debounced
+		}
+
+		// Perform silent background engine sweep
+		res, err := FetchAll(context.Background(), cfg, db)
+		if err != nil || len(res.Articles) == 0 {
+			return nil
+		}
+		_ = db.SetLastSyncTime(time.Now())
+
+		// Fetch the newly merged state
+		newArticles, _ := db.GetRecentArticles(200)
+		newCount := 0
+		for _, a := range newArticles {
+			if !currentHashes[a.Hash()] {
+				newCount++
+			}
+		}
+
+		return syncCompleteMsg{articles: newArticles, newCount: newCount}
+	}
 }
 
 func RunTUI(articles []Article, cfg *AppConfig) error {
@@ -60,6 +100,8 @@ func RunTUI(articles []Article, cfg *AppConfig) error {
 		db:          db,
 		loadingInit: false,
 		spinner:     s,
+		isSyncing:   true,
+		syncStatus:  "⏳ Syncing Intelligence Nexus...",
 	}
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
@@ -71,11 +113,38 @@ func RunTUI(articles []Article, cfg *AppConfig) error {
 }
 
 func (m tuiModel) Init() tea.Cmd {
-	return m.spinner.Tick
+	currentHashes := make(map[string]bool)
+	for _, a := range m.articles {
+		currentHashes[a.Hash()] = true
+	}
+	return tea.Batch(m.spinner.Tick, performBackgroundSync(m.db, m.cfg, currentHashes))
 }
 
 func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case syncCompleteMsg:
+		m.isSyncing = false
+		if msg.newCount > 0 {
+			m.articles = msg.articles
+			// UX Zero Layout Shift: push down cursor so scrolling focus isn't lost
+			if m.cursor > 0 {
+				m.cursor += msg.newCount
+				m.scroll += msg.newCount
+			}
+			m.syncStatus = fmt.Sprintf("✓ Intelligence Nexus Updated: +%d signals", msg.newCount)
+		} else {
+			m.syncStatus = "✓ Intelligence Nexus Up-to-Date"
+		}
+		return m, nil
+
+	case spinner.TickMsg:
+		if m.isSyncing {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -193,8 +262,15 @@ func (m tuiModel) View() string {
 	doc.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, listCol, readerCol))
 	
 	// Footer
-	footer := statusStyle.Render(fmt.Sprintf(" %d SOURCES • %d ARTICLES • [X] NEXUS EVOLUTION • [O] OPEN • [Q] QUIT ", 1865, len(m.articles)))
-	doc.WriteString("\n\n" + footer)
+	spinnerStr := ""
+	if m.isSyncing {
+		spinnerStr = m.spinner.View() + " "
+	}
+	
+	footerContent := statusStyle.Render(fmt.Sprintf(" %s%s ", spinnerStr, m.syncStatus))
+	footerControls := statusStyle.Render(fmt.Sprintf(" %d SOURCES • %d ARTICLES • [X] NEXUS EVOLUTION • [O] OPEN • [Q] QUIT ", 1865, len(m.articles)))
+	
+	doc.WriteString("\n\n" + lipgloss.JoinHorizontal(lipgloss.Top, footerContent, " • ", footerControls))
 
 	return doc.String()
 }
