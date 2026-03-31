@@ -222,4 +222,3 @@ func (i *IntelligenceDB) SetLastSyncTime(t time.Time) error {
 	`, t.Format(time.RFC3339))
 	return err
 }
-// trying to commit this checking if this works or not
