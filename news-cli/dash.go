@@ -41,8 +41,8 @@ type dashboardModel struct {
 	articles []Article
 }
 
-func runGridDashboard() error {
-	p := tea.NewProgram(&dashboardModel{}, tea.WithAltScreen())
+func runGridDashboard(articles []Article) error {
+	p := tea.NewProgram(&dashboardModel{articles: articles}, tea.WithAltScreen())
 	_, err := p.Run()
 	return err
 }
@@ -68,17 +68,42 @@ func (m *dashboardModel) View() string {
 	header := headerStyle.Render("RECON INTELLIGENCE NEXUS DASHBOARD")
 	doc.WriteString(header + "\n\n")
 
+	var dragnet, vulns, apts, deepRes []string
+
+	for _, a := range m.articles {
+		title := a.Title
+		if len(title) > 40 {
+			title = title[:37] + "..."
+		}
+		item := fmt.Sprintf("• %s", title)
+
+		if a.SourceName == "[DRAGNET]" {
+			if len(dragnet) < 3 { dragnet = append(dragnet, item) }
+		} else if strings.Contains(strings.ToUpper(a.Title), "CVE-") {
+			if len(vulns) < 3 { vulns = append(vulns, item) }
+		} else if strings.Contains(strings.ToUpper(a.Title), "APT") || strings.Contains(strings.ToUpper(a.Title), "GROUP") {
+			if len(apts) < 3 { apts = append(apts, item) }
+		} else if a.Score > 10 {
+			if len(deepRes) < 3 { deepRes = append(deepRes, item) }
+		}
+	}
+
+	if len(dragnet) == 0 { dragnet = append(dragnet, "No breaking Dragnet sweeps.") }
+	if len(vulns) == 0 { vulns = append(vulns, "No active critical vulnerabilities.") }
+	if len(apts) == 0 { apts = append(apts, "No major APT activity detected.") }
+	if len(deepRes) == 0 { deepRes = append(deepRes, "No deep research identified.") }
+
 	// Grid Row 1
 	row1 := lipgloss.JoinHorizontal(lipgloss.Top,
-		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(special).Render("📡 FRESH SIGNALS"), "No new signals in last 30m.")),
-		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("🔴 CRITICAL VULNS"), "CVE-2026-3055: RCE in Linux Kernel")),
+		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(special).Render("📡 DRAGNET SWEEPS"), strings.Join(dragnet, "\n"))),
+		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("🔴 CRITICAL VULNS"), strings.Join(vulns, "\n"))),
 	)
 	doc.WriteString(row1 + "\n\n")
 
 	// Grid Row 2
 	row2 := lipgloss.JoinHorizontal(lipgloss.Top,
-		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("63")).Render("🕵️ APT TRACKER"), "Volt Typhoon: Targeting US Power Grid")),
-		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("220")).Render("📚 DEEP RESEARCH"), "The Internals of Zero-Click iMessage Exploits")),
+		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("63")).Render("🕵️ APT TRACKER"), strings.Join(apts, "\n"))),
+		cardStyle.Render(fmt.Sprintf("%s\n\n%s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("220")).Render("📚 DEEP RESEARCH"), strings.Join(deepRes, "\n"))),
 	)
 	doc.WriteString(row2 + "\n\n")
 

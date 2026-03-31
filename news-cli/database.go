@@ -168,3 +168,30 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]Article, error)
 	}
 	return articles, nil
 }
+
+// GetRecentArticles returns recently fetched articles ordered by score and date.
+func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
+	rows, err := i.db.Query(`
+		SELECT title, link, published_at, source_name, score, summary
+		FROM articles
+		ORDER BY score DESC, published_at DESC
+		LIMIT ?
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var articles []Article
+	for rows.Next() {
+		var a Article
+		var publishedAt time.Time
+		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
+			return nil, err
+		}
+		a.Published = publishedAt
+		articles = append(articles, a)
+	}
+	return articles, nil
+}
+

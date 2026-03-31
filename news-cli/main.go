@@ -51,7 +51,15 @@ func main() {
 	dashCmd := &cobra.Command{
 		Use:   "dash",
 		Short: "Open the high-level Intelligence Dashboard",
-		RunE:  func(cmd *cobra.Command, args []string) error { return runGridDashboard() },
+		RunE:  func(cmd *cobra.Command, args []string) error {
+			db, err := InitDB()
+			var articles []Article
+			if err == nil {
+				articles, _ = db.GetRecentArticles(400)
+				defer db.Close()
+			}
+			return runGridDashboard(articles)
+		},
 	}
 
 	scheduleCmd := &cobra.Command{Use: "schedule", Short: "Manage auto-run schedule"}
@@ -94,20 +102,28 @@ func runDefault(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch recent articles from DB (Zero-Latency)
-	// For now, we'll run a quick fetch if DB is empty
-	res, err := FetchAll(context.Background(), cfg, db)
-	if err != nil {
-		return err
+	var articles []Article
+	if db != nil {
+		articles, _ = db.GetRecentArticles(200)
+	}
+
+	if len(articles) == 0 {
+		fmt.Fprintf(os.Stderr, "⚠ DB empty. Performing initial fetch... this may take a minute.\n")
+		res, err := FetchAll(context.Background(), cfg, db)
+		if err != nil {
+			return err
+		}
+		articles = res.Articles
 	}
 
 	jsonOut, _ := cmd.Flags().GetBool("json")
 	if jsonOut {
-		return json.NewEncoder(os.Stdout).Encode(res.Articles)
+		return json.NewEncoder(os.Stdout).Encode(articles)
 	}
 
 	useBrowser, _ := cmd.Flags().GetBool("browser")
 	if useBrowser {
-		htmlContent, err := renderHTML(res.Articles)
+		htmlContent, err := renderHTML(articles)
 		if err != nil {
 			return err
 		}
@@ -115,7 +131,7 @@ func runDefault(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return RunTUI(res.Articles, cfg)
+	return RunTUI(articles, cfg)
 }
 
 func runSync(cmd *cobra.Command, args []string) error {

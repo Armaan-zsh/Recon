@@ -114,6 +114,25 @@ func FetchAll(ctx context.Context, cfg *AppConfig, db *IntelligenceDB) (FetchRes
 		})
 	}
 
+	// Inject the Dragnet Engine
+	g.Go(func() error {
+		dragnetArticles := FetchDragnetFeeds(ctx, cfg)
+		var validArticles []Article
+		for _, a := range dragnetArticles {
+			ScoreArticle(&a, cfg)
+			validArticles = append(validArticles, a)
+			
+			if db != nil {
+				ents := extractor.ExtractEntities(a)
+				_ = db.SaveArticle(a, ents)
+			}
+		}
+		mu.Lock()
+		articles = append(articles, validArticles...)
+		mu.Unlock()
+		return nil
+	})
+
 	_ = g.Wait()
 
 	// De-duplicate in memory for the TUI display
