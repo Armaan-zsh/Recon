@@ -75,9 +75,23 @@ var AntiKeywords = []string{
 	"deportat", "customs", "border wall",
 }
 
+// AdvisoryPatterns detect robotic CVE/advisory content that isn't real blog writing.
+var advisoryPattern = regexp.MustCompile(`(?i)^(CVE-\d|ZDI-\d|[A-Z]+-SA-|RHSA-|DSA-|USN-|GHSA-)`)
 var cvePattern = regexp.MustCompile(`(?i)CVE-\d{4}-\d+`)
 
-// ScoreArticle applies multi-signal scoring to an article.
+// BlogQualityKeywords indicate deep, insightful analysis worth reading.
+var BlogQualityKeywords = []string{
+	"how i", "deep dive", "behind the scenes", "lessons learned",
+	"building", "designing", "architecture", "reverse engineer",
+	"writeup", "write-up", "walkthrough", "tutorial",
+	"case study", "post-mortem", "postmortem", "retrospective",
+	"why we", "how we", "what i learned", "analysis",
+	"investigation", "explained", "demystif", "internals",
+	"under the hood", "from scratch",
+}
+
+// ScoreArticle applies multi-signal scoring that PRIORITIZES high-quality
+// blog posts and research over robotic CVE advisories.
 func ScoreArticle(a *Article, keywords []string) {
 	title := strings.ToLower(a.Title)
 	desc := strings.ToLower(a.Description)
@@ -93,39 +107,57 @@ func ScoreArticle(a *Article, keywords []string) {
 
 	score := 0
 
-	// Keyword matching (title weighted heavier than description)
+	// === PENALTY: Robotic advisory titles ===
+	// Titles starting with CVE-XXXX, ZDI-XX, RHSA- etc. are machine-generated noise
+	if advisoryPattern.MatchString(a.Title) {
+		score -= 15
+	}
+
+	// === KEYWORD MATCHING (moderate weight) ===
+	matchCount := 0
 	for _, kw := range keywords {
 		kwLower := strings.ToLower(kw)
 		if strings.Contains(title, kwLower) {
-			score += 10 // Title match = high signal
+			score += 5 // Title match (reduced from 10)
+			matchCount++
 		} else if strings.Contains(desc, kwLower) {
-			score += 5 // Description match = moderate signal
+			score += 2 // Description match (reduced from 5)
+			matchCount++
+		}
+	}
+	// Cap keyword accumulation — prevents CVE descriptions that match 20 keywords
+	// from dominating over a blog post matching 3
+	if matchCount > 5 {
+		score -= (matchCount - 5) * 2
+	}
+
+	// === BLOG QUALITY BONUS (the real signal) ===
+	for _, bq := range BlogQualityKeywords {
+		if strings.Contains(text, bq) {
+			score += 12 // Blog quality is worth WAY more than keyword spam
+			break       // Only count once
 		}
 	}
 
-	// CVE pattern bonus
-	if cvePattern.MatchString(a.Title) || cvePattern.MatchString(a.Description) {
-		score += 8
+	// Narrative title bonus — longer titles indicate real articles, not "CVE-2026-1234"
+	if len(a.Title) > 60 {
+		score += 5
 	}
 
-	// Zero-day bonus
-	if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") || strings.Contains(text, "zero day") {
-		score += 10
-	}
-
-	// Breach/leak bonus
-	if strings.Contains(text, "breach") || strings.Contains(text, "leak") || strings.Contains(text, "data exposure") {
-		score += 8
-	}
-
-	// Critical severity bonus
-	if strings.Contains(text, "critical") || strings.Contains(text, "remote code execution") || strings.Contains(text, "rce") {
-		score += 7
-	}
-
-	// High-value source (Researcher) bonus
+	// High-value source (Researcher/GOAT) bonus — the most important signal
 	if HighValueSources[a.SourceName] {
-		score += 10
+		score += 15 // Bumped from 10 — if Krebs, Schneier, or jvns wrote it, it matters
+	}
+
+	// === MINOR BONUSES (kept low so they don't dominate) ===
+	// Zero-day mentions in actual blog posts (not advisories) are interesting
+	if !advisoryPattern.MatchString(a.Title) {
+		if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {
+			score += 5
+		}
+		if strings.Contains(text, "breach") || strings.Contains(text, "leak") {
+			score += 4
+		}
 	}
 
 	a.Score = score

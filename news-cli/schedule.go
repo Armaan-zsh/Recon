@@ -9,16 +9,18 @@ import (
 )
 
 const serviceTemplate = `[Unit]
-Description=Recon - Daily Tech & CyberSec News Digest
+Description=Recon - Daily Tech & CyberSec Intelligence Digest
 
 [Service]
 Type=oneshot
+ExecStartPre=/usr/bin/notify-send -u normal -i dialog-information "🔍 Recon Intelligence" "Fetching your daily cyber intelligence digest..."
 ExecStart=%s --browser
+ExecStartPost=/usr/bin/notify-send -u normal -i dialog-information "✅ Recon Ready" "Your daily intelligence digest is open in the browser."
 Environment=DISPLAY=:0
 `
 
 const timerTemplate = `[Unit]
-Description=Recon Daily Digest Timer
+Description=Recon Daily Intelligence Timer
 
 [Timer]
 OnCalendar=*-*-* %s:00
@@ -34,7 +36,7 @@ Description=Recon digest after resume from suspend
 [Service]
 Type=oneshot
 ExecStartPre=/bin/sleep 10
-ExecStart=/bin/bash -c 'if [ "$(date +%%F)" != "$(cat %s/last_run.txt 2>/dev/null)" ]; then %s --browser; fi'
+ExecStart=/bin/bash -c 'if [ "$(date +%%F)" != "$(cat %s/last_run.txt 2>/dev/null)" ]; then /usr/bin/notify-send -u normal -i dialog-information "🔍 Recon" "Catching up on missed intelligence..." && %s --browser && /usr/bin/notify-send -u normal -i dialog-information "✅ Recon Ready" "Digest loaded."; fi'
 `
 
 // ScheduleInstall creates systemd user timer and service files.

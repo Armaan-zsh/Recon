@@ -37,14 +37,6 @@
             "url": "https://discord.com/blog/rss.xml"
         },
         {
-            "name": "Cisco Talos Disclosed Vulnerability Reports",
-            "url": "https://advisories.feedly.com/talos/disclosed/feed.json"
-        },
-        {
-            "name": "Red Hat security updates",
-            "url": "https://advisories.feedly.com/redhat/feed.json"
-        },
-        {
             "name": "Alex Ionescu's Blog",
             "url": "http://www.alex-ionescu.com/?feed=rss2"
         },
@@ -97,14 +89,6 @@
             "url": "http://seclists.org/rss/fulldisclosure.rss"
         },
         {
-            "name": "CISA - Known exploited vulnerabilities catalog",
-            "url": "https://advisories.feedly.com/cisa/exploitedCve/feed.json"
-        },
-        {
-            "name": "VMware Security Advisory",
-            "url": "https://www.vmware.com/security/advisories.xml"
-        },
-        {
             "name": "Latest stories for ZDNET in Security",
             "url": "http://www.zdnet.com/topic-security/rss.xml"
         },
@@ -123,14 +107,6 @@
         {
             "name": "Sophos News",
             "url": "https://blogs.sophos.com/feed/"
-        },
-        {
-            "name": "security-announce Mailing List",
-            "url": "http://rss.lists.apple.com/security-announce.rss"
-        },
-        {
-            "name": "Mozilla Foundation Security Advisories",
-            "url": "https://advisories.feedly.com/mozilla/feed.json"
         },
         {
             "name": "Dark Reading:",
@@ -157,10 +133,6 @@
             "url": "https://symantec-enterprise-blogs.security.com/blogs/rss/v1/blogs/rss.xml/221"
         },
         {
-            "name": "Adobe Security Bulletins and Advisories",
-            "url": "https://advisories.feedly.com/adobe/feed.json"
-        },
-        {
             "name": "XyliBox",
             "url": "http://www.xylibox.com/feeds/posts/default"
         },
@@ -179,10 +151,6 @@
         {
             "name": "SentinelOne Labs",
             "url": "https://www.sentinelone.com/labs/feed/"
-        },
-        {
-            "name": "Nvidia Product Security",
-            "url": "https://advisories.feedly.com/nvidia/feed.json"
         },
         {
             "name": "Securelist",
@@ -269,20 +237,12 @@
             "url": "http://www.social-engineer.org/feed/"
         },
         {
-            "name": "Microsoft Security Advisories - MSRC",
-            "url": "https://advisories.feedly.com/microsoft/feed.json"
-        },
-        {
             "name": "SANS Internet Storm Center, InfoCON: green",
             "url": "http://iscxml.sans.org/rssfeed.xml"
         },
         {
             "name": "Detection and Response - Rapid7 Cybersecurity Blog",
             "url": "https://blog.rapid7.com/tag/detection-and-response/rss/"
-        },
-        {
-            "name": "Jenkins Security Advisories",
-            "url": "https://advisories.feedly.com/jenkins/feed.json"
         },
         {
             "name": "Malwarebytes Unpacked",
@@ -317,10 +277,6 @@
             "url": "https://research.nccgroup.com/feed/"
         },
         {
-            "name": "inTheWild.io Exploitations",
-            "url": "https://advisories.feedly.com/inthewild/exploitations/feed.json"
-        },
-        {
             "name": "Pending Technical",
             "url": "http://pendingtech.wordpress.com/feed/"
         },
@@ -331,10 +287,6 @@
         {
             "name": "Didier Stevens",
             "url": "https://blog.didierstevens.com/feed/"
-        },
-        {
-            "name": "ZDI Published Advisories",
-            "url": "https://advisories.feedly.com/zdi/feed.json"
         },
         {
             "name": "Exploit Database",
@@ -461,10 +413,6 @@
             "url": "http://asert.arbornetworks.com/feed/"
         },
         {
-            "name": "Oracle Solaris Third Party Bulletins",
-            "url": "https://advisories.feedly.com/oracle/solaris/feed.json"
-        },
-        {
             "name": "CyberCrime &amp; Doing Time",
             "url": "http://garwarner.blogspot.com/feeds/posts/default"
         },
@@ -479,10 +427,6 @@
         {
             "name": "inthewild.io",
             "url": "https://raw.githubusercontent.com/gmatuz/inthewilddb/master/rss.xml"
-        },
-        {
-            "name": "Zoom Security Bulletin",
-            "url": "https://advisories.feedly.com/zoom/feed.json"
         },
         {
             "name": "Trend Micro Simply Security",
@@ -503,14 +447,6 @@
         {
             "name": "The Grugq",
             "url": "https://grugq.github.io/feed.xml"
-        },
-        {
-            "name": "Apple Security updates",
-            "url": "https://advisories.feedly.com/apple/feed.json"
-        },
-        {
-            "name": "Cisco Security Advisory",
-            "url": "http://tools.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml"
         },
         {
             "name": "Help Net Security",
@@ -609,10 +545,6 @@
             "url": "http://www.thedigitalforensicgroup.com/blog/feed/"
         },
         {
-            "name": "Google Chrome Security Bulletins",
-            "url": "https://advisories.feedly.com/google/chrome/feed.json"
-        },
-        {
             "name": "The Hacker News",
             "url": "http://thehackernews.com/feeds/posts/default"
         },
@@ -629,16 +561,8 @@
             "url": "https://blog.rapid7.com/rss/"
         },
         {
-            "name": "Zero Day Initiative",
-            "url": "https://www.zerodayinitiative.com/rss/published/"
-        },
-        {
             "name": "Technical Information Security Content &amp; Discussion",
             "url": "http://www.reddit.com/r/netsec/.rss"
-        },
-        {
-            "name": "NetApp Security Advisories",
-            "url": "https://advisories.feedly.com/netapp/feed.json"
         },
         {
             "name": "TaoSecurity",
@@ -707,10 +631,6 @@
         {
             "name": "Simon Willison",
             "url": "https://simonwillison.net/atom/entries/"
-        },
-        {
-            "name": "Latest Security Advisories",
-            "url": "https://technet.microsoft.com/en-us/security/rss/advisory"
         },
         {
             "name": "US-CERT: The United States Computer Emergency Readiness Team",
@@ -787,10 +707,6 @@
         {
             "name": "enigma0x3",
             "url": "http://enigma0x3.wordpress.com/feed/"
-        },
-        {
-            "name": "Google Android Security Bulletins",
-            "url": "https://advisories.feedly.com/google/android/feed.json"
         },
         {
             "name": "Zscaler Research",
