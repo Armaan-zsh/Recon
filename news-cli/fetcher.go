@@ -110,18 +110,18 @@ func ScoreArticle(a *Article, keywords []string) {
 	// === PENALTY: Robotic advisory titles ===
 	// Titles starting with CVE-XXXX, ZDI-XX, RHSA- etc. are machine-generated noise
 	if advisoryPattern.MatchString(a.Title) {
-		score -= 15
+		score -= 30
 	}
 
-	// === KEYWORD MATCHING (moderate weight) ===
+	// === KEYWORD MATCHING (reduced weight) ===
 	matchCount := 0
 	for _, kw := range keywords {
 		kwLower := strings.ToLower(kw)
 		if strings.Contains(title, kwLower) {
-			score += 5 // Title match (reduced from 10)
+			score += 3 // Multi-keyword relevance is less important than narrative quality
 			matchCount++
 		} else if strings.Contains(desc, kwLower) {
-			score += 2 // Description match (reduced from 5)
+			score += 1 
 			matchCount++
 		}
 	}
@@ -146,7 +146,7 @@ func ScoreArticle(a *Article, keywords []string) {
 
 	// High-value source (Researcher/GOAT) bonus — the most important signal
 	if HighValueSources[a.SourceName] {
-		score += 15 // Bumped from 10 — if Krebs, Schneier, or jvns wrote it, it matters
+		score += 25 // Elite researchers are the source of truth
 	}
 
 	// === MINOR BONUSES (kept low so they don't dominate) ===
@@ -186,7 +186,7 @@ func FetchFeeds(ctx context.Context, sources []FeedSource, keywords []string, st
 	)
 
 	g, ctx := errgroup.WithContext(ctx)
-	g.SetLimit(50) // Max 50 concurrent HTTP requests to prevent DNS/TCP starvation
+	g.SetLimit(100) // Doubled concurrency for 600+ feeds speed
 
 	for _, src := range sources {
 		src := src // Pin for closure
@@ -210,8 +210,8 @@ func FetchFeeds(ctx context.Context, sources []FeedSource, keywords []string, st
 				}
 			}
 
-			// Reasonable 10s timeout per feed
-			fetchCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+			// Moderate 8s timeout per feed for faster gathering
+			fetchCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
 			defer cancel()
 
 			feed, err := fp.ParseURLWithContext(src.URL, fetchCtx)

@@ -125,7 +125,7 @@ func runDefault(cmd *cobra.Command, args []string) error {
 
 	// Missed run warning
 	if MissedRun(cfg) {
-		fmt.Println("⚠ You missed your last scheduled digest! Fetching now...")
+		fmt.Fprintln(os.Stderr, "⚠ You missed your last scheduled digest! Fetching now...")
 	}
 
 	// Determine keywords
@@ -231,11 +231,11 @@ func runDarkSearch(cmd *cobra.Command, args []string) error {
 
 	cfg, _ := LoadConfig()
 	if cfg == nil || cfg.TorProxy == "" {
-		fmt.Println("⚠ Tor Proxy not configured in config.json. Please set 'tor_proxy' (e.g. socks5h://127.0.0.1:9050)")
+		fmt.Fprintln(os.Stderr, "⚠ Tor Proxy not configured in config.json. Please set 'tor_proxy' (e.g. socks5h://127.0.0.1:9050)")
 		return nil
 	}
 
-	fmt.Printf("🕵  Searching Dark Web for: %s...\n", query)
+	fmt.Fprintf(os.Stderr, "🕵  Searching Dark Web for: %s...\n", query)
 
 	// In a real implementation, we'd scrape Ahmia/OnionLand here.
 	// For now, we'll use our fetcher to hit known Onion research feeds if we have any,
