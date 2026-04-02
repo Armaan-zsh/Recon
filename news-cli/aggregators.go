@@ -12,9 +12,9 @@ import (
 )
 
 var dragnetQueries = []string{
-	"zero-day OR 0day OR ransomware",
+	"\"zero-day\" OR \"0day\" OR ransomware",
 	"malware AND (exploit OR compromised)",
-	"APT OR \"supply chain attack\"",
+	"(\"APT\" AND cyber) OR \"supply chain attack\"",
 }
 
 // FetchDragnetFeeds generates targeted Google News RSS feeds and fetches them.
