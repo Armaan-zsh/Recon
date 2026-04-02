@@ -179,7 +179,8 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
 		FROM articles
-		ORDER BY score DESC, published_at DESC
+		WHERE substr(published_at, 1, 10) <= substr(datetime('now'), 1, 10)
+		ORDER BY substr(published_at, 1, 10) DESC, score DESC
 		LIMIT ?
 	`, limit)
 	if err != nil {
