@@ -125,11 +125,20 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.newCount > 0 {
 			m.articles = msg.articles
 
+			for _, a := range msg.articles {
+				if a.Score > 65 && time.Since(a.Published) < 4*time.Hour {
+					m.syncStatus = fmt.Sprintf("🚨 BREAKING: %s", a.Title)
+					break
+				}
+			}
+
 			if m.cursor > 0 {
 				m.cursor += msg.newCount
 				m.scroll += msg.newCount
 			}
-			m.syncStatus = fmt.Sprintf("✓ Intelligence Nexus Updated: +%d signals", msg.newCount)
+			if !strings.HasPrefix(m.syncStatus, "🚨") {
+				m.syncStatus = fmt.Sprintf("✓ Intelligence Nexus Updated: +%d signals", msg.newCount)
+			}
 		} else {
 			m.syncStatus = "✓ Intelligence Nexus Up-to-Date"
 		}
@@ -225,15 +234,29 @@ func (m tuiModel) View() string {
 	for i := start; i < end; i++ {
 		art := m.articles[i]
 		title := art.Title
-		if len(title) > m.width/2-10 {
-			title = title[:m.width/2-13] + "..."
+		
+		// Rugged UI: Highlight Breaking News
+		isBreaking := art.Score > 65 && time.Since(art.Published) < 4*time.Hour
+		prefix := "  "
+		displayTitle := title
+		
+		if isBreaking {
+			displayTitle = "🚨 " + title
 		}
 
-		line := fmt.Sprintf("[%d] %s", art.Score, title)
+		if len(displayTitle) > m.width/2-10 {
+			displayTitle = displayTitle[:m.width/2-13] + "..."
+		}
+
+		line := fmt.Sprintf("[%d] %s", art.Score, displayTitle)
 		if i == m.cursor {
 			listLines = append(listLines, selectedStyle.Render(line))
 		} else {
-			listLines = append(listLines, "  "+line)
+			if isBreaking {
+				listLines = append(listLines, " " + lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render(line))
+			} else {
+				listLines = append(listLines, prefix+line)
+			}
 		}
 	}
 

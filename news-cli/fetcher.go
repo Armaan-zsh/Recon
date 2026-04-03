@@ -184,6 +184,11 @@ func fetchSingleFeed(ctx context.Context, source FeedSource, cfg *AppConfig) ([]
 			pubDate = *item.PublishedParsed
 		}
 
+		// Rugged 36h Future-Date Guard
+		if pubDate.After(time.Now().Add(36 * time.Hour)) {
+			continue
+		}
+
 		desc := item.Description
 		if len(desc) > 500 {
 			desc = desc[:500] + "..."
@@ -223,7 +228,29 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 	}
 
 	if strings.Contains(text, "how i") || strings.Contains(text, "deep dive") || strings.Contains(text, "lessons learned") || strings.Contains(text, "internals of") {
-		score += 12
+		score += 15
+	}
+
+	// Narrative Quality Bonus (NIST/MITRE Patterns)
+	narrativeKeys := []string{"root cause", "rca", "timeline", "chain of events", "ttps", "mitre att&ck", "forensic", "methodology", "attribution", "uncovering", "detailed analysis"}
+	for _, k := range narrativeKeys {
+		if strings.Contains(text, k) {
+			score += 10
+		}
+	}
+
+	// Smart CVE Research Bonus
+	if cvePattern.MatchString(a.Title) {
+		isNarrative := false
+		for _, k := range narrativeKeys {
+			if strings.Contains(text, k) {
+				isNarrative = true
+				break
+			}
+		}
+		if isNarrative {
+			score += 20 // Huge boost for deep research about a CVE
+		}
 	}
 
 	if len(a.Title) > 60 {
@@ -231,7 +258,7 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 	}
 
 	if HighValueSources[a.SourceName] {
-		score += 25
+		score += 45
 	}
 
 	if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {
