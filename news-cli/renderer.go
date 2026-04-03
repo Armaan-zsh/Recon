@@ -196,7 +196,7 @@ func serveAndOpen(htmlContent string) {
 		return
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
-	url := fmt.Sprintf("http://127.0.0.1:%d", port)
+	serverURL := fmt.Sprintf("http://127.0.0.1:%d", port)
 
 	mux := http.NewServeMux()
 
@@ -213,12 +213,35 @@ func serveAndOpen(htmlContent string) {
 			return
 		}
 
-		article, err := readability.FromURL(articleURL, 12*time.Second)
+		client := &http.Client{Timeout: 15 * time.Second}
+		req, _ := http.NewRequest("GET", articleURL, nil)
+		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+		req.Header.Set("Sec-Ch-Ua", "\"Chromium\";v=\"130\", \"Google Chrome\";v=\"130\", \"Not?A_Brand\";v=\"99\"")
+		req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+		req.Header.Set("Sec-Ch-Ua-Platform", "\"Linux\"")
+
+		respFetch, err := client.Do(req)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"error":"Network failure: %s"}`, html.EscapeString(err.Error()))
+			return
+		}
+		defer respFetch.Body.Close()
+
+		if respFetch.StatusCode == 403 || respFetch.StatusCode == 503 {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"error":"Blocked by Cloudflare/Anti-Bot (%d). Try opening original."}`, respFetch.StatusCode)
+			return
+		}
+
+		u, _ := url.Parse(articleURL)
+		article, err := readability.FromReader(respFetch.Body, u)
 		w.Header().Set("Content-Type", "application/json")
 
 		if err != nil {
-			errMsg := html.EscapeString(err.Error())
-			fmt.Fprintf(w, `{"error":"Could not extract content: %s"}`, errMsg)
+			fmt.Fprintf(w, `{"error":"Extraction failed: %s"}`, html.EscapeString(err.Error()))
 			return
 		}
 
@@ -232,24 +255,16 @@ func serveAndOpen(htmlContent string) {
 			contentHTML = "<p>" + html.EscapeString(article.TextContent) + "</p>"
 		}
 
-		resp := readResult{
-			Title:		titleJSON,
-			Byline:		bylineJSON,
-			Content:	contentHTML,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-
-		fmt.Fprintf(w, `{"title":"%s","byline":"%s","content":%q}`, resp.Title, resp.Byline, resp.Content)
+		fmt.Fprintf(w, `{"title":"%s","byline":"%s","content":%q}`, titleJSON, bylineJSON, contentHTML)
 	})
 
 	go func() {
 		_ = http.Serve(listener, mux)
 	}()
 
-	openBrowserURL(url)
+	openBrowserURL(serverURL)
 
-	fmt.Printf("\n  Serving at %s\n", url)
+	fmt.Printf("\n  Serving at %s\n", serverURL)
 	fmt.Printf("  Press Ctrl+C to exit.\n\n")
 
 	select {}

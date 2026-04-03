@@ -194,10 +194,16 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
 		a.Published = publishedAt
 		articles = append(articles, a)
 	}
-	return articles, nil
+
+	clusterer := NewClusterer(0.85)
+	groups := clusterer.ClusterArticles(articles)
+	var unique []Article
+	for _, g := range groups {
+		unique = append(unique, g.PrimaryArticle)
+	}
+	return unique, nil
 }
 
-// GetLastSyncTime retrieves the last successful fetch timestamp to enable debouncing.
 func (i *IntelligenceDB) GetLastSyncTime() time.Time {
 	var val string
 	err := i.db.QueryRow("SELECT value FROM system_state WHERE key = 'last_sync'").Scan(&val)

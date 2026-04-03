@@ -34,10 +34,16 @@ type Article struct {
 	Score		int
 }
 
-// Hash returns a unique SHA256 identifier for the article based on its link.
 func (a Article) Hash() string {
+	u, err := url.Parse(a.Link)
+	base := a.Link
+	if err == nil {
+		u.RawQuery = ""
+		u.Fragment = ""
+		base = u.String()
+	}
 	h := sha256.New()
-	h.Write([]byte(a.Link))
+	h.Write([]byte(base))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -184,7 +190,6 @@ func fetchSingleFeed(ctx context.Context, source FeedSource, cfg *AppConfig) ([]
 			pubDate = *item.PublishedParsed
 		}
 
-		// Rugged 36h Future-Date Guard
 		if pubDate.After(time.Now().Add(36 * time.Hour)) {
 			continue
 		}
@@ -231,7 +236,6 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 		score += 15
 	}
 
-	// Narrative Quality Bonus (NIST/MITRE Patterns)
 	narrativeKeys := []string{"root cause", "rca", "timeline", "chain of events", "ttps", "mitre att&ck", "forensic", "methodology", "attribution", "uncovering", "detailed analysis"}
 	for _, k := range narrativeKeys {
 		if strings.Contains(text, k) {
@@ -239,7 +243,6 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 		}
 	}
 
-	// Smart CVE Research Bonus
 	if cvePattern.MatchString(a.Title) {
 		isNarrative := false
 		for _, k := range narrativeKeys {
@@ -249,7 +252,7 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 			}
 		}
 		if isNarrative {
-			score += 20 // Huge boost for deep research about a CVE
+			score += 20
 		}
 	}
 
@@ -258,11 +261,25 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 	}
 
 	if HighValueSources[a.SourceName] {
-		score += 45
+		score += 50
 	}
 
 	if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {
 		score += 5
+	}
+
+	lowSignalDomains := []string{"medium.com", "dev.to", "hashnode.com"}
+	for _, d := range lowSignalDomains {
+		if strings.Contains(strings.ToLower(a.Link), d) {
+			score -= 25
+		}
+	}
+
+	fluffKeys := []string{"fresher", "roadmap", "career", "interview", "salary", "beginner guide", "top 10", "how to start", "prompt engineering"}
+	for _, k := range fluffKeys {
+		if strings.Contains(text, k) {
+			score -= 40
+		}
 	}
 
 	a.Score = score
