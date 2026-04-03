@@ -28,10 +28,10 @@ func FetchDragnetFeeds(ctx context.Context, cfg *AppConfig) []Article {
 	for _, query := range dragnetQueries {
 		encodedQuery := url.QueryEscape(query)
 		feedURL := fmt.Sprintf("https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en", encodedQuery)
-		
+
 		feed, err := fp.ParseURLWithContext(feedURL, ctx)
 		if err != nil {
-			continue // Skip failed queries silently
+			continue
 		}
 
 		for _, item := range feed.Items {
@@ -45,20 +45,19 @@ func FetchDragnetFeeds(ctx context.Context, cfg *AppConfig) []Article {
 				desc = desc[:500] + "..."
 			}
 
-			// Clean up Google News title (removes "- Site Name")
 			title := item.Title
 			if idx := strings.LastIndex(title, " - "); idx > 0 {
 				title = title[:idx]
 			}
 
 			articles = append(articles, Article{
-				Title:       title,
-				Link:        item.Link,
-				Description: desc,
-				Content:     item.Content,
-				Published:   pubDate,
-				SourceName:  "[DRAGNET]", // Unique identifier for UI
-				Score:       20,          // Base Dragnet bonus
+				Title:		title,
+				Link:		item.Link,
+				Description:	desc,
+				Content:	item.Content,
+				Published:	pubDate,
+				SourceName:	"[DRAGNET]",
+				Score:		20,
 			})
 		}
 	}

@@ -168,10 +168,10 @@ const htmlTemplate = `<!DOCTYPE html>
 
 // readResult is the JSON response for the /read endpoint.
 type readResult struct {
-	Title   string `json:"title"`
-	Byline  string `json:"byline,omitempty"`
-	Content string `json:"content"`
-	Error   string `json:"error,omitempty"`
+	Title	string	`json:"title"`
+	Byline	string	`json:"byline,omitempty"`
+	Content	string	`json:"content"`
+	Error	string	`json:"error,omitempty"`
 }
 
 func renderHTML(articles []Article) (string, error) {
@@ -200,13 +200,11 @@ func serveAndOpen(htmlContent string) {
 
 	mux := http.NewServeMux()
 
-	// Main page
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte(htmlContent))
 	})
 
-	// Proxy reader endpoint — fetches article server-side, returns clean JSON
 	mux.HandleFunc("/read", func(w http.ResponseWriter, r *http.Request) {
 		articleURL := r.URL.Query().Get("url")
 		if articleURL == "" {
@@ -224,27 +222,24 @@ func serveAndOpen(htmlContent string) {
 			return
 		}
 
-		// Sanitize for JSON
 		titleJSON := strings.ReplaceAll(article.Title, `"`, `\"`)
 		titleJSON = strings.ReplaceAll(titleJSON, "\n", " ")
 		bylineJSON := strings.ReplaceAll(article.Byline, `"`, `\"`)
 		bylineJSON = strings.ReplaceAll(bylineJSON, "\n", " ")
 
-		// Use the HTML content from readability (already cleaned)
 		contentHTML := article.Content
 		if contentHTML == "" {
 			contentHTML = "<p>" + html.EscapeString(article.TextContent) + "</p>"
 		}
 
-		// Encode properly
 		resp := readResult{
-			Title:   titleJSON,
-			Byline:  bylineJSON,
-			Content: contentHTML,
+			Title:		titleJSON,
+			Byline:		bylineJSON,
+			Content:	contentHTML,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		// Manual JSON to preserve HTML
+
 		fmt.Fprintf(w, `{"title":"%s","byline":"%s","content":%q}`, resp.Title, resp.Byline, resp.Content)
 	})
 

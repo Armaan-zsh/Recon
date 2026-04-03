@@ -104,12 +104,10 @@ func RunSetupWizard() (*AppConfig, error) {
 
 	cfg.SetupComplete = true
 
-	// Save config
 	if err := SaveConfig(cfg); err != nil {
 		return nil, fmt.Errorf("failed to save config: %w", err)
 	}
 
-	// Install systemd timer if scheduled
 	if cfg.ScheduleTime != "" {
 		fmt.Println("  → Installing systemd timer...")
 		if err := ScheduleInstall(cfg.ScheduleTime); err != nil {

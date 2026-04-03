@@ -25,20 +25,19 @@ func LoadFeeds() ([]FeedSource, error) {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "recon",
-		Short: "Recon — High-Signal Intelligence Nexus",
-		Long:  "Cracking the code of discovery with 2,500+ elite feeds and persistent threat memory.",
-		RunE:  runDefault,
+		Use:	"recon",
+		Short:	"Recon — High-Signal Intelligence Nexus",
+		Long:	"Cracking the code of discovery with 2,500+ elite feeds and persistent threat memory.",
+		RunE:	runDefault,
 	}
 
 	rootCmd.Flags().Bool("json", false, "Output results as JSON to stdout")
 	rootCmd.Flags().Bool("browser", false, "Open results in browser sidebar view instead of TUI")
 
-	// Subcommands
 	initCmd := &cobra.Command{
-		Use:   "init",
-		Short: "Run the setup wizard",
-		RunE:  func(cmd *cobra.Command, args []string) error { _, err := RunSetupWizard(); return err },
+		Use:	"init",
+		Short:	"Run the setup wizard",
+		RunE:	func(cmd *cobra.Command, args []string) error { _, err := RunSetupWizard(); return err },
 	}
 
 	rootCmd.AddCommand(initCmd)

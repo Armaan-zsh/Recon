@@ -41,14 +41,13 @@ ExecStart=/bin/bash -c 'if [ "$(date +%%F)" != "$(cat %s/last_run.txt 2>/dev/nul
 
 // ScheduleInstall creates systemd user timer and service files.
 func ScheduleInstall(scheduleTime string) error {
-	// Get the binary path
+
 	binPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("cannot determine binary path: %w", err)
 	}
 	binPath, _ = filepath.EvalSymlinks(binPath)
 
-	// Get systemd user directory
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("cannot determine home directory: %w", err)
@@ -64,28 +63,24 @@ func ScheduleInstall(scheduleTime string) error {
 		return err
 	}
 
-	// Write service file
 	serviceContent := fmt.Sprintf(serviceTemplate, binPath)
 	servicePath := filepath.Join(systemdDir, "recon-digest.service")
 	if err := os.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
 		return fmt.Errorf("failed to write service file: %w", err)
 	}
 
-	// Write timer file
 	timerContent := fmt.Sprintf(timerTemplate, scheduleTime)
 	timerPath := filepath.Join(systemdDir, "recon-digest.timer")
 	if err := os.WriteFile(timerPath, []byte(timerContent), 0644); err != nil {
 		return fmt.Errorf("failed to write timer file: %w", err)
 	}
 
-	// Write resume service
 	resumeContent := fmt.Sprintf(resumeServiceTemplate, cfgDir, binPath)
 	resumePath := filepath.Join(systemdDir, "recon-resume.service")
 	if err := os.WriteFile(resumePath, []byte(resumeContent), 0644); err != nil {
 		return fmt.Errorf("failed to write resume service: %w", err)
 	}
 
-	// Reload systemd and enable/start the timer
 	cmds := [][]string{
 		{"systemctl", "--user", "daemon-reload"},
 		{"systemctl", "--user", "enable", "--now", "recon-digest.timer"},
@@ -113,7 +108,7 @@ func ScheduleDisable() error {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		_ = cmd.Run() // Ignore errors if already disabled
+		_ = cmd.Run()
 	}
 
 	return nil

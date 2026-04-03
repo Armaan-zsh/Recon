@@ -16,16 +16,16 @@ import (
 
 // Styles
 var (
-	accentColor   = lipgloss.Color("#7D56F4") // Purple for Nexus
-	dimColor      = lipgloss.Color("#78716c")
-	panelColor    = lipgloss.Color("#1c1917")
-	borderColor   = lipgloss.Color("#44403c")
-	titleStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f5f5f4"))
-	selectedStyle = lipgloss.NewStyle().Bold(true).Border(lipgloss.NormalBorder(), false, false, false, true).BorderForeground(accentColor).PaddingLeft(1).Foreground(accentColor)
-	metaStyle     = lipgloss.NewStyle().Foreground(dimColor)
-	sourceStyle   = lipgloss.NewStyle().Foreground(accentColor).Bold(true).Transform(strings.ToUpper)
-	tuiHeaderStyle   = lipgloss.NewStyle().Bold(true).Foreground(accentColor).Padding(1, 2)
-	statusStyle   = lipgloss.NewStyle().Background(lipgloss.Color("#292524")).Foreground(dimColor).Padding(0, 1)
+	accentColor	= lipgloss.Color("#7D56F4")	// Purple for Nexus
+	dimColor	= lipgloss.Color("#78716c")
+	panelColor	= lipgloss.Color("#1c1917")
+	borderColor	= lipgloss.Color("#44403c")
+	titleStyle	= lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f5f5f4"))
+	selectedStyle	= lipgloss.NewStyle().Bold(true).Border(lipgloss.NormalBorder(), false, false, false, true).BorderForeground(accentColor).PaddingLeft(1).Foreground(accentColor)
+	metaStyle	= lipgloss.NewStyle().Foreground(dimColor)
+	sourceStyle	= lipgloss.NewStyle().Foreground(accentColor).Bold(true).Transform(strings.ToUpper)
+	tuiHeaderStyle	= lipgloss.NewStyle().Bold(true).Foreground(accentColor).Padding(1, 2)
+	statusStyle	= lipgloss.NewStyle().Background(lipgloss.Color("#292524")).Foreground(dimColor).Padding(0, 1)
 )
 
 type fetchCompleteMsg struct {
@@ -33,28 +33,28 @@ type fetchCompleteMsg struct {
 }
 
 type tuiModel struct {
-	articles     []Article
-	result       FetchResult
-	cfg          *AppConfig
-	db           *IntelligenceDB
-	cursor       int
-	height       int
-	width        int
-	scroll       int
-	viewport     viewport.Model
-	vpReady      bool
-	loadingInit  bool
-	activePane   int // 0 = list, 1 = reader
-	nexusView    bool
-	nexusText    string
-	spinner      spinner.Model
-	isSyncing    bool
-	syncStatus   string
+	articles	[]Article
+	result		FetchResult
+	cfg		*AppConfig
+	db		*IntelligenceDB
+	cursor		int
+	height		int
+	width		int
+	scroll		int
+	viewport	viewport.Model
+	vpReady		bool
+	loadingInit	bool
+	activePane	int	// 0 = list, 1 = reader
+	nexusView	bool
+	nexusText	string
+	spinner		spinner.Model
+	isSyncing	bool
+	syncStatus	string
 }
 
 type syncCompleteMsg struct {
-	articles []Article
-	newCount int
+	articles	[]Article
+	newCount	int
 }
 
 func performBackgroundSync(db *IntelligenceDB, cfg *AppConfig, currentHashes map[string]bool) tea.Cmd {
@@ -65,17 +65,15 @@ func performBackgroundSync(db *IntelligenceDB, cfg *AppConfig, currentHashes map
 
 		lastSync := db.GetLastSyncTime()
 		if time.Since(lastSync) < 15*time.Minute {
-			return nil // Debounced
+			return nil
 		}
 
-		// Perform silent background engine sweep
 		res, err := FetchAll(context.Background(), cfg, db)
 		if err != nil || len(res.Articles) == 0 {
 			return nil
 		}
 		_ = db.SetLastSyncTime(time.Now())
 
-		// Fetch the newly merged state
 		newArticles, _ := db.GetRecentArticles(200)
 		newCount := 0
 		for _, a := range newArticles {
@@ -95,13 +93,13 @@ func RunTUI(articles []Article, cfg *AppConfig) error {
 	s.Style = lipgloss.NewStyle().Foreground(accentColor)
 
 	m := tuiModel{
-		articles:    articles,
-		cfg:         cfg,
-		db:          db,
-		loadingInit: false,
-		spinner:     s,
-		isSyncing:   true,
-		syncStatus:  "⏳ Syncing Intelligence Nexus...",
+		articles:	articles,
+		cfg:		cfg,
+		db:		db,
+		loadingInit:	false,
+		spinner:	s,
+		isSyncing:	true,
+		syncStatus:	"⏳ Syncing Intelligence Nexus...",
 	}
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
@@ -126,7 +124,7 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.isSyncing = false
 		if msg.newCount > 0 {
 			m.articles = msg.articles
-			// UX Zero Layout Shift: push down cursor so scrolling focus isn't lost
+
 			if m.cursor > 0 {
 				m.cursor += msg.newCount
 				m.scroll += msg.newCount
@@ -185,13 +183,13 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "x", "X":
-			// Trigger Nexus Relationship View
+
 			if m.cursor < len(m.articles) && m.db != nil {
 				art := m.articles[m.cursor]
 				extractor := NewExtractor()
 				ents := extractor.ExtractEntities(art)
 				if len(ents) > 0 {
-					// Pull historical timeline for the first high-signal entity
+
 					hist, _ := m.db.GetEntityTimeline(ents[0])
 					m.nexusText = RenderNexusTimeline(ents[0], hist)
 					m.viewport.SetContent(m.nexusText)
@@ -213,8 +211,7 @@ func (m tuiModel) View() string {
 	}
 
 	doc := strings.Builder{}
-	
-	// Header
+
 	doc.WriteString(tuiHeaderStyle.Render("RECON INTELLIGENCE NEXUS") + "\n")
 
 	// List
@@ -240,13 +237,12 @@ func (m tuiModel) View() string {
 		}
 	}
 
-	// Simple 2-column layout
 	listCol := lipgloss.NewStyle().Width(m.width / 2).Render(strings.Join(listLines, "\n"))
-	
+
 	var readerContent string
 	if m.cursor < len(m.articles) {
 		art := m.articles[m.cursor]
-		readerContent = fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s", 
+		readerContent = fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s",
 			sourceStyle.Render(art.SourceName),
 			titleStyle.Render(art.Title),
 			metaStyle.Render(art.Published.Format("2006-01-02 15:04")),
@@ -260,16 +256,15 @@ func (m tuiModel) View() string {
 		Render(readerContent)
 
 	doc.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, listCol, readerCol))
-	
-	// Footer
+
 	spinnerStr := ""
 	if m.isSyncing {
 		spinnerStr = m.spinner.View() + " "
 	}
-	
+
 	footerContent := statusStyle.Render(fmt.Sprintf(" %s%s ", spinnerStr, m.syncStatus))
 	footerControls := statusStyle.Render(fmt.Sprintf(" %d SOURCES • %d ARTICLES • [X] NEXUS EVOLUTION • [O] OPEN • [Q] QUIT ", 1865, len(m.articles)))
-	
+
 	doc.WriteString("\n\n" + lipgloss.JoinHorizontal(lipgloss.Top, footerContent, " • ", footerControls))
 
 	return doc.String()

@@ -10,10 +10,10 @@ import (
 
 // TimelineEntry represents a single point in a threat's history.
 type TimelineEntry struct {
-	Date   time.Time
-	Title  string
-	Source string
-	Link   string
+	Date	time.Time
+	Title	string
+	Source	string
+	Link	string
 }
 
 // RenderNexusTimeline generates a vertical ASCII timeline for a threat entity.
@@ -38,12 +38,10 @@ func RenderNexusTimeline(entityName string, articles []Article) string {
 
 	for i, a := range articles {
 		dateStr := a.Published.Format("Jan 2006")
-		
-		// Render Node
+
 		doc.WriteString(dateStyle.Render(dateStr) + nodeStyle + lipgloss.NewStyle().Bold(true).Render(a.Title) + "\n")
 		doc.WriteString(strings.Repeat(" ", 12) + lineStyle + lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(fmt.Sprintf("%s • %s", a.SourceName, a.Link)) + "\n")
 
-		// Render Vertical Line connection
 		if i < len(articles)-1 {
 			doc.WriteString(strings.Repeat(" ", 12) + lineStyle + "\n")
 		}

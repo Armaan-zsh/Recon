@@ -18,7 +18,7 @@ func NewClusterer(threshold float64) *Clusterer {
 func (c *Clusterer) JaccardSimilarity(s1, s2 string) float64 {
 	f1 := strings.Fields(strings.ToLower(s1))
 	f2 := strings.Fields(strings.ToLower(s2))
-	
+
 	if len(f1) == 0 || len(f2) == 0 {
 		return 0
 	}
@@ -41,9 +41,9 @@ func (c *Clusterer) JaccardSimilarity(s1, s2 string) float64 {
 
 // ClusterGroup represents a group of similar articles.
 type ClusterGroup struct {
-	ID              string
-	PrimaryArticle  Article
-	RelatedArticles []Article
+	ID		string
+	PrimaryArticle	Article
+	RelatedArticles	[]Article
 }
 
 // ClusterArticles groups a slice of articles into clusters.
@@ -62,8 +62,8 @@ func (c *Clusterer) ClusterArticles(articles []Article) []ClusterGroup {
 
 		if !found {
 			clusters = append(clusters, ClusterGroup{
-				ID:             art.Hash(),
-				PrimaryArticle: art,
+				ID:		art.Hash(),
+				PrimaryArticle:	art,
 			})
 		}
 	}

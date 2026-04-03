@@ -35,12 +35,10 @@ func InitDB() (*IntelligenceDB, error) {
 		return nil, fmt.Errorf("failed to open sqlite db: %w", err)
 	}
 
-	// Enable WAL mode for concurrent Read/Write
 	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
 	}
 
-	// Initialize Schema
 	schema := `
 	CREATE TABLE IF NOT EXISTS articles (
 		hash TEXT PRIMARY KEY,
@@ -101,7 +99,6 @@ func (i *IntelligenceDB) SaveArticle(art Article, entities []string) error {
 	}
 	defer tx.Rollback()
 
-	// 1. Save Article
 	_, err = tx.Exec(`
 		INSERT INTO articles (hash, title, link, published_at, source_name, score, summary)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -113,7 +110,6 @@ func (i *IntelligenceDB) SaveArticle(art Article, entities []string) error {
 		return err
 	}
 
-	// 2. Save Entities and Relationships
 	for _, ent := range entities {
 		_, err = tx.Exec("INSERT OR IGNORE INTO entities (name, type) VALUES (?, ?)", ent, "UNKNOWN")
 		if err != nil {
@@ -206,7 +202,7 @@ func (i *IntelligenceDB) GetLastSyncTime() time.Time {
 	var val string
 	err := i.db.QueryRow("SELECT value FROM system_state WHERE key = 'last_sync'").Scan(&val)
 	if err != nil {
-		return time.Time{} // Return zero-time if never synced
+		return time.Time{}
 	}
 	t, err := time.Parse(time.RFC3339, val)
 	if err != nil {

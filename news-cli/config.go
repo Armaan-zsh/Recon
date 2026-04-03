@@ -12,20 +12,20 @@ const appName = "recon"
 
 // AppConfig holds all user preferences from the setup wizard.
 type AppConfig struct {
-	Timezone      string   `json:"timezone"`
-	ScheduleTime  string   `json:"schedule_time"`
-	Categories    []string `json:"categories"`
-	Keywords      []string `json:"keywords"`
-	SetupComplete bool     `json:"setup_complete"`
-	LastRun       string   `json:"last_run,omitempty"`
-	TorProxy      string   `json:"tor_proxy,omitempty"` // SOCKS5 proxy for .onion searches (e.g. socks5h://127.0.0.1:9050)
+	Timezone	string		`json:"timezone"`
+	ScheduleTime	string		`json:"schedule_time"`
+	Categories	[]string	`json:"categories"`
+	Keywords	[]string	`json:"keywords"`
+	SetupComplete	bool		`json:"setup_complete"`
+	LastRun		string		`json:"last_run,omitempty"`
+	TorProxy	string		`json:"tor_proxy,omitempty"`	// SOCKS5 proxy for .onion searches (e.g. socks5h://127.0.0.1:9050)
 }
 
 // CategoryDef maps a human-readable category to its scoring keywords.
 type CategoryDef struct {
-	Name     string
-	ID       string
-	Keywords []string
+	Name		string
+	ID		string
+	Keywords	[]string
 }
 
 // AllCategories is the master list of categories the user can choose from.
@@ -44,8 +44,8 @@ var AllCategories = []CategoryDef{
 
 // Timezones provides a curated list of common timezones for the setup wizard.
 var Timezones = []struct {
-	Label string
-	Value string
+	Label	string
+	Value	string
 }{
 	{"Asia/Kolkata (IST, UTC+5:30)", "Asia/Kolkata"},
 	{"America/New_York (EST, UTC-5)", "America/New_York"},
@@ -91,7 +91,7 @@ func LoadConfig() (*AppConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil // No config yet, first run
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}

@@ -7,21 +7,21 @@ import (
 
 // EntityExtractor finds technical indicators and actors in text.
 type EntityExtractor struct {
-	cveRegex    *regexp.Regexp
-	ipRegex     *regexp.Regexp
-	domainRegex *regexp.Regexp
-	aptRegex    *regexp.Regexp
-	malwareRefs []string
-	aptNames    []string
+	cveRegex	*regexp.Regexp
+	ipRegex		*regexp.Regexp
+	domainRegex	*regexp.Regexp
+	aptRegex	*regexp.Regexp
+	malwareRefs	[]string
+	aptNames	[]string
 }
 
 // NewExtractor initializes the regex patterns and entity lookup lists.
 func NewExtractor() *EntityExtractor {
 	return &EntityExtractor{
-		cveRegex:    regexp.MustCompile(`(?i)CVE-\d{4}-\d{4,}`),
-		ipRegex:     regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`),
-		domainRegex: regexp.MustCompile(`(?i)\b([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}\b`),
-		aptRegex:    regexp.MustCompile(`(?i)\b(APT\d+|Lazarus|Volt Typhoon|Fancy Bear|Cozy Bear|Turla|Sandworm|Sandman|Stardust Chollima|Kimsuky)\b`),
+		cveRegex:	regexp.MustCompile(`(?i)CVE-\d{4}-\d{4,}`),
+		ipRegex:	regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`),
+		domainRegex:	regexp.MustCompile(`(?i)\b([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}\b`),
+		aptRegex:	regexp.MustCompile(`(?i)\b(APT\d+|Lazarus|Volt Typhoon|Fancy Bear|Cozy Bear|Turla|Sandworm|Sandman|Stardust Chollima|Kimsuky)\b`),
 		malwareRefs: []string{
 			"Glass Worm", "RedLine", "AgentTesla", "IcedID", "Cobalt Strike",
 			"Metasploit", "LockBit", "BlackCat", "Ahti", "VoidLink", "DarkGate",
@@ -39,19 +39,16 @@ func (e *EntityExtractor) ExtractEntities(a Article) []string {
 	found := make(map[string]bool)
 	text := a.Title + " " + a.Description + " " + a.Content
 
-	// 1. CVEs
 	cves := e.cveRegex.FindAllString(text, -1)
 	for _, c := range cves {
 		found[strings.ToUpper(c)] = true
 	}
 
-	// 2. APTs
 	apts := e.aptRegex.FindAllString(text, -1)
 	for _, a := range apts {
 		found[strings.ToUpper(a)] = true
 	}
 
-	// 3. Known Malware lookup
 	lowerText := strings.ToLower(text)
 	for _, m := range e.malwareRefs {
 		if strings.Contains(lowerText, strings.ToLower(m)) {
@@ -59,14 +56,12 @@ func (e *EntityExtractor) ExtractEntities(a Article) []string {
 		}
 	}
 
-	// 4. APT Name lookup
 	for _, n := range e.aptNames {
 		if strings.Contains(lowerText, strings.ToLower(n)) {
 			found[strings.ToUpper(n)] = true
 		}
 	}
 
-	// Convert map to slice
 	entities := make([]string, 0, len(found))
 	for k := range found {
 		entities = append(entities, k)
