@@ -1,44 +1,61 @@
 package models
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"net/url"
 	"time"
 )
 
-// Article represents a single scored news item.
 type Article struct {
-	Title       string
-	Link        string
-	Description string
-	Content     string // Raw content for extraction
-	Published   time.Time
-	SourceName  string
-	Score       int
-	Hash        string
+	Title       string    `json:"Title"`
+	Link        string    `json:"Link"`
+	Description string    `json:"Description"`
+	Content     string    `json:"Content"`
+	Published   time.Time `json:"Published"`
+	SourceName  string    `json:"SourceName"`
+	Score       int       `json:"Score"`
 }
 
-// FeedSource represents a single RSS/Atom feed to fetch.
+func (a Article) Hash() string {
+	u, err := url.Parse(a.Link)
+	base := a.Link
+	if err == nil {
+		u.RawQuery = ""
+		u.Fragment = ""
+		base = u.String()
+	}
+	h := sha256.New()
+	h.Write([]byte(base))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 type FeedSource struct {
-	Name string
-	URL  string
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
-// FetchResult holds the results from fetching all feeds.
 type FetchResult struct {
-	Articles   []Article
-	TotalFeeds int
+	Articles     []Article
+	TotalFeeds   int
 	FetchedFeeds int
-	Duration   time.Duration
+	Duration     time.Duration
 }
 
-// ClusterGroup represents a group of similar articles.
 type ClusterGroup struct {
-	ID             string
-	PrimaryArticle Article
+	ID              string
+	PrimaryArticle  Article
 	RelatedArticles []Article
 }
 
-// Entity represents an extracted security entity.
 type Entity struct {
 	Name string
-	Type string // MALWARE, APT, CVE, TARGET, INFRA, NATION_STATE
+	Type string
+}
+
+type TimelineEntry struct {
+	Date   time.Time
+	Title  string
+	Source string
+	Link   string
 }

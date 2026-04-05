@@ -3,20 +3,22 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"math"
+	"news-cli/internal/clusterer"
+	"news-cli/internal/models"
+	"news-cli/internal/scorer"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	_ "modernc.org/sqlite"
-	"news-cli/internal/models"
 )
 
-// IntelligenceDB manages the persistent SQLite store for the Nexus.
 type IntelligenceDB struct {
 	db *sql.DB
 }
 
-// InitDB initializes the SQLite database with WAL mode and necessary schema.
 func InitDB() (*IntelligenceDB, error) {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -55,7 +57,7 @@ func InitDB() (*IntelligenceDB, error) {
 
 	CREATE TABLE IF NOT EXISTS entities (
 		name TEXT PRIMARY KEY,
-		type TEXT -- MALWARE, APT, CVE, TARGET, INFRA, NATION_STATE
+		type TEXT
 	);
 
 	CREATE TABLE IF NOT EXISTS article_entities (
@@ -88,12 +90,10 @@ func InitDB() (*IntelligenceDB, error) {
 	return &IntelligenceDB{db: db}, nil
 }
 
-// Close closes the database connection.
 func (i *IntelligenceDB) Close() error {
 	return i.db.Close()
 }
 
-// SaveArticle persists an article and its relationships.
 func (i *IntelligenceDB) SaveArticle(art models.Article, entities []string) error {
 	tx, err := i.db.Begin()
 	if err != nil {
@@ -107,26 +107,19 @@ func (i *IntelligenceDB) SaveArticle(art models.Article, entities []string) erro
 		ON CONFLICT(hash) DO UPDATE SET
 			score = excluded.score,
 			summary = excluded.summary;
-	`, art.Hash, art.Title, art.Link, art.Published, art.SourceName, art.Score, art.Description)
+	`, art.Hash(), art.Title, art.Link, art.Published, art.SourceName, art.Score, art.Description)
 	if err != nil {
 		return err
 	}
 
 	for _, ent := range entities {
-		_, err = tx.Exec("INSERT OR IGNORE INTO entities (name, type) VALUES (?, ?)", ent, "UNKNOWN")
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("INSERT OR IGNORE INTO article_entities (article_hash, entity_name) VALUES (?, ?)", art.Hash, ent)
-		if err != nil {
-			return err
-		}
+		_, _ = tx.Exec("INSERT OR IGNORE INTO entities (name, type) VALUES (?, ?)", ent, "UNKNOWN")
+		_, _ = tx.Exec("INSERT OR IGNORE INTO article_entities (article_hash, entity_name) VALUES (?, ?)", art.Hash(), ent)
 	}
 
 	return tx.Commit()
 }
 
-// GetArticleEntities returns all entities associated with an article.
 func (i *IntelligenceDB) GetArticleEntities(hash string) ([]string, error) {
 	rows, err := i.db.Query("SELECT entity_name FROM article_entities WHERE article_hash = ?", hash)
 	if err != nil {
@@ -145,7 +138,6 @@ func (i *IntelligenceDB) GetArticleEntities(hash string) ([]string, error) {
 	return entities, nil
 }
 
-// GetEntityTimeline returns all articles associated with an entity, sorted by time.
 func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]models.Article, error) {
 	rows, err := i.db.Query(`
 		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
@@ -172,7 +164,6 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]models.Article,
 	return articles, nil
 }
 
-// GetRecentArticles returns recently fetched articles ordered by score and date.
 func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) {
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
@@ -194,13 +185,29 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 			return nil, err
 		}
 		a.Published = publishedAt
+
+		scorer.ScoreArticle(&a, nil)
 		articles = append(articles, a)
 	}
 
-	return articles, nil
+	c := clusterer.NewClusterer(0.95)
+	groups := c.ClusterArticles(articles)
+	var unique []models.Article
+	for _, g := range groups {
+		unique = append(unique, g.PrimaryArticle)
+	}
+
+	sort.Slice(unique, func(i, j int) bool {
+		ageI := time.Since(unique[i].Published).Hours()
+		ageJ := time.Since(unique[j].Published).Hours()
+		scoreI := float64(unique[i].Score) / math.Pow(ageI+2, 1.8)
+		scoreJ := float64(unique[j].Score) / math.Pow(ageJ+2, 1.8)
+		return scoreI > scoreJ
+	})
+
+	return unique, nil
 }
 
-// SearchArticles searches for articles matching a query with optional filters.
 func (i *IntelligenceDB) SearchArticles(query string, afterDate time.Time, minScore int) ([]models.Article, error) {
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
@@ -210,59 +217,6 @@ func (i *IntelligenceDB) SearchArticles(query string, afterDate time.Time, minSc
 		AND score >= ?
 		ORDER BY score DESC, published_at DESC
 	`, "%"+query+"%", "%"+query+"%", afterDate.Format("2006-01-02"), minScore)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var articles []models.Article
-	for rows.Next() {
-		var a models.Article
-		var publishedAt time.Time
-		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
-			return nil, err
-		}
-		a.Published = publishedAt
-		articles = append(articles, a)
-	}
-	return articles, nil
-}
-
-// GetArticlesByCategory returns articles filtered by category keywords.
-func (i *IntelligenceDB) GetArticlesByCategory(keywords []string, source string) ([]models.Article, error) {
-	if len(keywords) == 0 {
-		return nil, fmt.Errorf("no keywords provided")
-	}
-
-	// Build dynamic query with multiple keyword conditions
-	query := `
-		SELECT title, link, published_at, source_name, score, summary
-		FROM articles
-		WHERE (`
-	
-	conditions := make([]string, len(keywords))
-	args := make([]interface{}, len(keywords))
-	for i, kw := range keywords {
-		conditions[i] = "(title LIKE ? OR summary LIKE ?)"
-		args[i*2] = "%" + kw + "%"
-		args[i*2+1] = "%" + kw + "%"
-	}
-	
-	query += " OR "
-	query += conditions[0]
-	for _, cond := range conditions[1:] {
-		query += " OR " + cond
-	}
-	query += ")"
-
-	if source != "" {
-		query += " AND source_name = ?"
-		args = append(args, source)
-	}
-
-	query += " ORDER BY score DESC, published_at DESC"
-
-	rows, err := i.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +248,6 @@ func (i *IntelligenceDB) GetLastSyncTime() time.Time {
 	return t
 }
 
-// SetLastSyncTime updates the sync debounce lock.
 func (i *IntelligenceDB) SetLastSyncTime(t time.Time) error {
 	_, err := i.db.Exec(`
 		INSERT INTO system_state (key, value) VALUES ('last_sync', ?)
@@ -303,7 +256,6 @@ func (i *IntelligenceDB) SetLastSyncTime(t time.Time) error {
 	return err
 }
 
-// GetAllEntities returns all known entities with their types.
 func (i *IntelligenceDB) GetAllEntities() ([]models.Entity, error) {
 	rows, err := i.db.Query("SELECT name, type FROM entities ORDER BY name")
 	if err != nil {
@@ -322,7 +274,6 @@ func (i *IntelligenceDB) GetAllEntities() ([]models.Entity, error) {
 	return entities, nil
 }
 
-// GetTrendingEntities returns the most frequently mentioned entities in recent articles.
 func (i *IntelligenceDB) GetTrendingEntities(hours int, limit int) ([]models.Entity, error) {
 	rows, err := i.db.Query(`
 		SELECT e.name, e.type, COUNT(*) as mention_count
