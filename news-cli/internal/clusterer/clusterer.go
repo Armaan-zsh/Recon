@@ -6,44 +6,30 @@ import (
 )
 
 type Clusterer struct {
-	Threshold float64
+	MaxHammingDistance int
+	sh                 *SimHash
 }
 
-func NewClusterer(threshold float64) *Clusterer {
-	return &Clusterer{Threshold: threshold}
-}
-
-func (c *Clusterer) JaccardSimilarity(s1, s2 string) float64 {
-	f1 := strings.Fields(strings.ToLower(s1))
-	f2 := strings.Fields(strings.ToLower(s2))
-
-	if len(f1) == 0 || len(f2) == 0 {
-		return 0
+func NewClusterer(threshold int) *Clusterer {
+	return &Clusterer{
+		MaxHammingDistance: threshold,
+		sh:                 NewSimHash(),
 	}
-
-	m1 := make(map[string]bool)
-	for _, f := range f1 {
-		m1[f] = true
-	}
-
-	intersection := 0
-	for _, f := range f2 {
-		if m1[f] {
-			intersection++
-		}
-	}
-
-	union := len(f1) + len(f2) - intersection
-	return float64(intersection) / float64(union)
 }
 
 func (c *Clusterer) ClusterArticles(articles []models.Article) []models.ClusterGroup {
 	var clusters []models.ClusterGroup
+	fps := make(map[string]uint64)
 
 	for _, art := range articles {
+		h := art.Hash()
+		fp := c.sh.Fingerprint(art.Title + " " + art.Description)
+		fps[h] = fp
+
 		found := false
 		for i, group := range clusters {
-			if c.JaccardSimilarity(art.Title, group.PrimaryArticle.Title) > c.Threshold {
+			primaryH := group.PrimaryArticle.Hash()
+			if HammingDistance(fp, fps[primaryH]) <= c.MaxHammingDistance {
 				clusters[i].RelatedArticles = append(clusters[i].RelatedArticles, art)
 				found = true
 				break
@@ -52,7 +38,7 @@ func (c *Clusterer) ClusterArticles(articles []models.Article) []models.ClusterG
 
 		if !found {
 			clusters = append(clusters, models.ClusterGroup{
-				ID:             art.Hash(),
+				ID:             h,
 				PrimaryArticle: art,
 			})
 		}

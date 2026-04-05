@@ -94,9 +94,23 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 		return nil
 	})
 
+	g.Go(func() error {
+		configDir, _ := os.UserConfigDir()
+		robinPath := filepath.Join(configDir, "recon", "robin_intel.json")
+		if _, err := os.Stat(robinPath); err == nil {
+			robinArticles, err := IngestRobinIntel(robinPath)
+			if err == nil {
+				mu.Lock()
+				articles = append(articles, robinArticles...)
+				mu.Unlock()
+			}
+		}
+		return nil
+	})
+
 	_ = g.Wait()
 
-	c := clusterer.NewClusterer(0.85)
+	c := clusterer.NewClusterer(3)
 	clusters := c.ClusterArticles(articles)
 
 	finalArticles := []models.Article{}

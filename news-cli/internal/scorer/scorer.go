@@ -4,7 +4,10 @@ import (
 	"news-cli/internal/models"
 	"regexp"
 	"strings"
+	"sync"
 )
+
+var loadOnce sync.Once
 
 var (
 	AdvisoryPattern = regexp.MustCompile(`(?i)^(CVE-\d|ZDI-\d|[A-Z]+-SA-|RHSA-|DSA-|USN-|GHSA-)`)
@@ -82,6 +85,16 @@ func ScoreArticle(a *models.Article, keywords []string) {
 
 	if HighValueSources[a.SourceName] {
 		score += 50
+	}
+
+	loadOnce.Do(func() {
+		_ = LoadIntel()
+	})
+
+	cves := CvePattern.FindAllString(strings.ToUpper(a.Title+" "+a.Description), -1)
+	for _, cve := range cves {
+		score += GetKEVScoreBoost(cve)
+		score += GetEPSSScoreBoost(cve)
 	}
 
 	if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {

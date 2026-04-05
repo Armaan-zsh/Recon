@@ -79,6 +79,28 @@ func InitDB() (*IntelligenceDB, error) {
 		value TEXT
 	);
 
+	-- FTS5 Search Table
+	CREATE VIRTUAL TABLE IF NOT EXISTS article_search USING fts5(
+		hash UNINDEXED,
+		title,
+		summary,
+		source_name UNINDEXED,
+		content='articles',
+		content_rowid='hash'
+	);
+
+	-- Triggers to keep FTS5 in sync
+	CREATE TRIGGER IF NOT EXISTS trg_articles_ai AFTER INSERT ON articles BEGIN
+		INSERT INTO article_search(rowid, title, summary) VALUES (new.hash, new.title, new.summary);
+	END;
+	CREATE TRIGGER IF NOT EXISTS trg_articles_ad AFTER DELETE ON articles BEGIN
+		INSERT INTO article_search(article_search, rowid, title, summary) VALUES('delete', old.hash, old.title, old.summary);
+	END;
+	CREATE TRIGGER IF NOT EXISTS trg_articles_au AFTER UPDATE ON articles BEGIN
+		INSERT INTO article_search(article_search, rowid, title, summary) VALUES('delete', old.hash, old.title, old.summary);
+		INSERT INTO article_search(rowid, title, summary) VALUES(new.hash, new.title, new.summary);
+	END;
+
 	CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published_at);
 	CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
 	CREATE INDEX IF NOT EXISTS idx_articles_score ON articles(score DESC);
@@ -190,7 +212,7 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 		articles = append(articles, a)
 	}
 
-	c := clusterer.NewClusterer(0.95)
+	c := clusterer.NewClusterer(3)
 	groups := c.ClusterArticles(articles)
 	var unique []models.Article
 	for _, g := range groups {
@@ -210,13 +232,14 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 
 func (i *IntelligenceDB) SearchArticles(query string, afterDate time.Time, minScore int) ([]models.Article, error) {
 	rows, err := i.db.Query(`
-		SELECT title, link, published_at, source_name, score, summary
-		FROM articles
-		WHERE (title LIKE ? OR summary LIKE ?)
-		AND published_at >= ?
-		AND score >= ?
-		ORDER BY score DESC, published_at DESC
-	`, "%"+query+"%", "%"+query+"%", afterDate.Format("2006-01-02"), minScore)
+		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
+		FROM articles a
+		JOIN article_search s ON a.hash = s.rowid
+		WHERE article_search MATCH ?
+		AND a.published_at >= ?
+		AND a.score >= ?
+		ORDER BY rank, a.published_at DESC
+	`, query, afterDate.Format("2006-01-02"), minScore)
 	if err != nil {
 		return nil, err
 	}
