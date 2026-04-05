@@ -17,13 +17,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// FeedSource represents a single RSS/Atom feed to fetch.
 type FeedSource struct {
 	Name	string
 	URL	string
 }
 
-// Article represents a single scored news item.
 type Article struct {
 	Title		string
 	Link		string
@@ -47,7 +45,6 @@ func (a Article) Hash() string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// FetchResult holds the results from fetching all feeds.
 type FetchResult struct {
 	Articles	[]Article
 	TotalFeeds	int
@@ -55,13 +52,11 @@ type FetchResult struct {
 	Duration	time.Duration
 }
 
-// Global patterns for scoring
 var (
 	advisoryPattern	= regexp.MustCompile(`(?i)^(CVE-\d|ZDI-\d|[A-Z]+-SA-|RHSA-|DSA-|USN-|GHSA-)`)
 	cvePattern	= regexp.MustCompile(`(?i)CVE-\d{4}-\d+`)
 )
 
-// FetchAll synchronizes all feeds concurrently and updates the database.
 func FetchAll(ctx context.Context, cfg *AppConfig, db *IntelligenceDB) (FetchResult, error) {
 	start := time.Now()
 	feeds, err := LoadFeeds()
@@ -285,7 +280,6 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 	a.Score = score
 }
 
-// HighValueSources are known authoritative technical sources.
 var HighValueSources = map[string]bool{
 	"Simon Willison":		true,
 	"George Hotz (geohot)":		true,

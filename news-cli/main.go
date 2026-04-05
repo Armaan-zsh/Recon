@@ -60,7 +60,6 @@ func runDefault(cmd *cobra.Command, args []string) error {
 		defer db.Close()
 	}
 
-	// Fetch recent articles from DB (Zero-Latency)
 	var articles []Article
 	if db != nil {
 		articles, _ = db.GetRecentArticles(200)

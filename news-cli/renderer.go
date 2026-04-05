@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -166,7 +167,6 @@ const htmlTemplate = `<!DOCTYPE html>
 </html>
 `
 
-// readResult is the JSON response for the /read endpoint.
 type readResult struct {
 	Title	string	`json:"title"`
 	Byline	string	`json:"byline,omitempty"`

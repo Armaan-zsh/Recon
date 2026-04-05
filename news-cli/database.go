@@ -3,19 +3,19 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	_ "modernc.org/sqlite"
 )
 
-// IntelligenceDB manages the persistent SQLite store for the Nexus.
 type IntelligenceDB struct {
 	db *sql.DB
 }
 
-// InitDB initializes the SQLite database with WAL mode and necessary schema.
 func InitDB() (*IntelligenceDB, error) {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -86,12 +86,10 @@ func InitDB() (*IntelligenceDB, error) {
 	return &IntelligenceDB{db: db}, nil
 }
 
-// Close closes the database connection.
 func (i *IntelligenceDB) Close() error {
 	return i.db.Close()
 }
 
-// SaveArticle persists an article and its relationships.
 func (i *IntelligenceDB) SaveArticle(art Article, entities []string) error {
 	tx, err := i.db.Begin()
 	if err != nil {
@@ -124,7 +122,6 @@ func (i *IntelligenceDB) SaveArticle(art Article, entities []string) error {
 	return tx.Commit()
 }
 
-// GetArticleEntities returns all entities associated with an article.
 func (i *IntelligenceDB) GetArticleEntities(hash string) ([]string, error) {
 	rows, err := i.db.Query("SELECT entity_name FROM article_entities WHERE article_hash = ?", hash)
 	if err != nil {
@@ -143,7 +140,6 @@ func (i *IntelligenceDB) GetArticleEntities(hash string) ([]string, error) {
 	return entities, nil
 }
 
-// GetEntityTimeline returns all articles associated with an entity, sorted by time.
 func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]Article, error) {
 	rows, err := i.db.Query(`
 		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
@@ -170,7 +166,6 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]Article, error)
 	return articles, nil
 }
 
-// GetRecentArticles returns recently fetched articles ordered by score and date.
 func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
@@ -192,15 +187,28 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
 			return nil, err
 		}
 		a.Published = publishedAt
+		
+		ScoreArticle(&a, nil) 
 		articles = append(articles, a)
 	}
 
-	clusterer := NewClusterer(0.85)
+	clusterer := NewClusterer(0.95)
 	groups := clusterer.ClusterArticles(articles)
 	var unique []Article
 	for _, g := range groups {
 		unique = append(unique, g.PrimaryArticle)
 	}
+
+	sort.Slice(unique, func(i, j int) bool {
+		ageI := time.Since(unique[i].Published).Hours()
+		ageJ := time.Since(unique[j].Published).Hours()
+		
+		scoreI := float64(unique[i].Score) / math.Pow(ageI+2, 1.8)
+		scoreJ := float64(unique[j].Score) / math.Pow(ageJ+2, 1.8)
+		
+		return scoreI > scoreJ
+	})
+
 	return unique, nil
 }
 
@@ -217,7 +225,6 @@ func (i *IntelligenceDB) GetLastSyncTime() time.Time {
 	return t
 }
 
-// SetLastSyncTime updates the sync debounce lock.
 func (i *IntelligenceDB) SetLastSyncTime(t time.Time) error {
 	_, err := i.db.Exec(`
 		INSERT INTO system_state (key, value) VALUES ('last_sync', ?)

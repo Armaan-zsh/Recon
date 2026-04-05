@@ -14,7 +14,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Styles
 var (
 	accentColor	= lipgloss.Color("#7D56F4")	// Purple for Nexus
 	dimColor	= lipgloss.Color("#78716c")
@@ -223,7 +222,6 @@ func (m tuiModel) View() string {
 
 	doc.WriteString(tuiHeaderStyle.Render("RECON INTELLIGENCE NEXUS") + "\n")
 
-	// List
 	var listLines []string
 	start := m.scroll
 	end := start + (m.height - 6)
@@ -235,7 +233,6 @@ func (m tuiModel) View() string {
 		art := m.articles[i]
 		title := art.Title
 		
-		// Rugged UI: Highlight Breaking News
 		isBreaking := art.Score > 65 && time.Since(art.Published) < 4*time.Hour
 		prefix := "  "
 		displayTitle := title

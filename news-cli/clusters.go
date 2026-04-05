@@ -4,17 +4,14 @@ import (
 	"strings"
 )
 
-// Clusterer groups similar article titles to reduce duplication.
 type Clusterer struct {
 	Threshold float64
 }
 
-// NewClusterer initializes a clusterer with a similarity threshold.
 func NewClusterer(threshold float64) *Clusterer {
 	return &Clusterer{Threshold: threshold}
 }
 
-// JaccardSimilarity calculates the similarity between two strings using N-grams.
 func (c *Clusterer) JaccardSimilarity(s1, s2 string) float64 {
 	f1 := strings.Fields(strings.ToLower(s1))
 	f2 := strings.Fields(strings.ToLower(s2))
@@ -39,14 +36,12 @@ func (c *Clusterer) JaccardSimilarity(s1, s2 string) float64 {
 	return float64(intersection) / float64(union)
 }
 
-// ClusterGroup represents a group of similar articles.
 type ClusterGroup struct {
 	ID		string
 	PrimaryArticle	Article
 	RelatedArticles	[]Article
 }
 
-// ClusterArticles groups a slice of articles into clusters.
 func (c *Clusterer) ClusterArticles(articles []Article) []ClusterGroup {
 	var clusters []ClusterGroup
 
