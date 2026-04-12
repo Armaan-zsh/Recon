@@ -40,29 +40,36 @@ var HighValueSources = map[string]bool{
 func ScoreArticle(a *models.Article, keywords []string) {
 	score := 0
 	text := strings.ToLower(a.Title + " " + a.Description)
+	keywordHits := 0
+	signalHits := 0
 
 	for _, kw := range keywords {
 		if strings.Contains(text, strings.ToLower(kw)) {
 			score += 3
+			keywordHits++
 		}
 	}
 
 	if AdvisoryPattern.MatchString(a.Title) {
 		score -= 30
+		signalHits++
 	}
 
 	if CvePattern.MatchString(a.Title) {
 		score += 15
+		signalHits++
 	}
 
 	if strings.Contains(text, "how i") || strings.Contains(text, "deep dive") || strings.Contains(text, "lessons learned") || strings.Contains(text, "internals of") {
 		score += 15
+		signalHits++
 	}
 
 	narrativeKeys := []string{"root cause", "rca", "timeline", "chain of events", "ttps", "mitre att&ck", "forensic", "methodology", "attribution", "uncovering", "detailed analysis"}
 	for _, k := range narrativeKeys {
 		if strings.Contains(text, k) {
 			score += 10
+			signalHits++
 		}
 	}
 
@@ -76,6 +83,7 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		}
 		if isNarrative {
 			score += 20
+			signalHits++
 		}
 	}
 
@@ -83,8 +91,22 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		score += 5
 	}
 
+	topicKeys := []string{
+		"security", "vulnerability", "exploit", "malware", "ransomware", "breach",
+		"privacy", "surveillance", "cryptography", "encryption", "supply chain",
+		"zero-day", "0day", "prompt injection", "llm", "artificial intelligence",
+		"machine learning", "cloud", "kubernetes", "linux", "incident",
+	}
+	for _, k := range topicKeys {
+		if strings.Contains(text, k) {
+			signalHits++
+		}
+	}
+
 	if HighValueSources[a.SourceName] {
-		score += 50
+		if keywordHits > 0 || signalHits > 0 {
+			score += 50
+		}
 	}
 
 	loadOnce.Do(func() {
@@ -99,6 +121,7 @@ func ScoreArticle(a *models.Article, keywords []string) {
 
 	if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {
 		score += 5
+		signalHits++
 	}
 
 	lowSignalDomains := []string{"medium.com", "dev.to", "hashnode.com"}
@@ -113,6 +136,10 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		if strings.Contains(text, k) {
 			score -= 40
 		}
+	}
+
+	if keywordHits == 0 && signalHits == 0 {
+		score -= 45
 	}
 
 	a.Score = score

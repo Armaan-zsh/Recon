@@ -7,6 +7,8 @@ import (
 	"news-cli/internal/extractor"
 	"news-cli/internal/fetcher"
 	"news-cli/internal/models"
+	"news-cli/internal/notifier"
+	"news-cli/internal/textutil"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -19,41 +21,42 @@ import (
 )
 
 var (
-	accentColor    = lipgloss.Color("#7D56F4")
-	dimColor       = lipgloss.Color("#78716c")
-	borderColor    = lipgloss.Color("#44403c")
-	titleStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f5f5f4"))
-	selectedStyle  = lipgloss.NewStyle().Bold(true).Border(lipgloss.NormalBorder(), false, false, false, true).BorderForeground(accentColor).PaddingLeft(1).Foreground(accentColor)
-	metaStyle      = lipgloss.NewStyle().Foreground(dimColor)
-	sourceStyle    = lipgloss.NewStyle().Foreground(accentColor).Bold(true).Transform(strings.ToUpper)
-	tuiHeaderStyle = lipgloss.NewStyle().Bold(true).Foreground(accentColor).Padding(1, 2)
-	statusStyle    = lipgloss.NewStyle().Background(lipgloss.Color("#292524")).Foreground(dimColor).Padding(0, 1)
+	pageStyle        = lipgloss.NewStyle().Background(lipgloss.Color("#0b1016")).Foreground(lipgloss.Color("#edf2f7"))
+	panelStyle       = lipgloss.NewStyle().Background(lipgloss.Color("#111827")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#243244")).Padding(1, 2)
+	headerStyle      = lipgloss.NewStyle().Background(lipgloss.Color("#111827")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#155e75")).Padding(1, 2)
+	brandStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f59e0b"))
+	subtitleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#93c5fd"))
+	sectionTitle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#67e8f9"))
+	selectedCard     = lipgloss.NewStyle().Background(lipgloss.Color("#172033")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#f59e0b")).Padding(1, 1)
+	cardStyle        = lipgloss.NewStyle().Background(lipgloss.Color("#0f172a")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#1f2937")).Padding(1, 1)
+	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f8fafc"))
+	selectedTitle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#fde68a"))
+	metaStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#94a3b8"))
+	readerTextStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#dbe4ee"))
+	sourceStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22d3ee"))
+	keyStyle         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f59e0b"))
+	statusMutedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cbd5e1")).Background(lipgloss.Color("#13202f")).Padding(0, 1)
+	statusHotStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#fff7ed")).Background(lipgloss.Color("#9a3412")).Padding(0, 1)
 )
 
-type fetchCompleteMsg struct {
-	result models.FetchResult
-}
-
 type tuiModel struct {
-	articles    []models.Article
-	result      models.FetchResult
-	keywords    []string
-	torProxy    string
-	feedData    []byte
-	db          *database.IntelligenceDB
-	cursor      int
-	height      int
-	width       int
-	scroll      int
-	viewport    viewport.Model
-	vpReady     bool
-	loadingInit bool
-	activePane  int
-	nexusView   bool
-	nexusText   string
-	spinner     spinner.Model
-	isSyncing   bool
-	syncStatus  string
+	articles     []models.Article
+	keywords     []string
+	torProxy     string
+	feedData     []byte
+	db           *database.IntelligenceDB
+	cursor       int
+	height       int
+	width        int
+	scroll       int
+	viewport     viewport.Model
+	vpReady      bool
+	nexusView    bool
+	nexusText    string
+	spinner      spinner.Model
+	isSyncing    bool
+	syncStatus   string
+	totalSources int
 }
 
 type syncCompleteMsg struct {
@@ -93,19 +96,24 @@ func performBackgroundSync(db *database.IntelligenceDB, keywords []string, torPr
 func RunTUI(articles []models.Article, keywords []string, torProxy string, feedData []byte) error {
 	db, _ := database.InitDB()
 	s := spinner.New()
-	s.Spinner = spinner.Globe
-	s.Style = lipgloss.NewStyle().Foreground(accentColor)
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#22d3ee"))
+
+	totalSources := 0
+	if feeds, err := fetcher.LoadFeeds(feedData); err == nil {
+		totalSources = len(feeds)
+	}
 
 	m := tuiModel{
-		articles:    articles,
-		keywords:    keywords,
-		torProxy:    torProxy,
-		feedData:    feedData,
-		db:          db,
-		loadingInit: false,
-		spinner:     s,
-		isSyncing:   true,
-		syncStatus:  "⏳ Syncing Intelligence Nexus...",
+		articles:     articles,
+		keywords:     keywords,
+		torProxy:     torProxy,
+		feedData:     feedData,
+		db:           db,
+		spinner:      s,
+		isSyncing:    true,
+		syncStatus:   "Scanning for fresh signals",
+		totalSources: totalSources,
 	}
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
@@ -130,23 +138,10 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.isSyncing = false
 		if msg.newCount > 0 {
 			m.articles = msg.articles
-
-			for _, a := range msg.articles {
-				if a.Score > 65 && time.Since(a.Published) < 4*time.Hour {
-					m.syncStatus = fmt.Sprintf("🚨 BREAKING: %s", a.Title)
-					break
-				}
-			}
-
-			if m.cursor > 0 {
-				m.cursor += msg.newCount
-				m.scroll += msg.newCount
-			}
-			if !strings.HasPrefix(m.syncStatus, "🚨") {
-				m.syncStatus = fmt.Sprintf("✓ Intelligence Nexus Updated: +%d signals", msg.newCount)
-			}
+			m.syncStatus = fmt.Sprintf("%d new signals landed", msg.newCount)
+			go notifier.NotifyNewArticles(msg.newCount, msg.articles[0])
 		} else {
-			m.syncStatus = "✓ Intelligence Nexus Up-to-Date"
+			m.syncStatus = "No new signals in the last sync window"
 		}
 		return m, nil
 
@@ -162,11 +157,11 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		if !m.vpReady {
-			m.viewport = viewport.New(m.width/2, m.height-4)
+			m.viewport = viewport.New(max(40, m.width/2), max(10, m.height-8))
 			m.vpReady = true
 		}
-		m.viewport.Width = m.width / 2
-		m.viewport.Height = m.height - 4
+		m.viewport.Width = max(40, m.width-8)
+		m.viewport.Height = max(10, m.height-8)
 
 	case tea.KeyMsg:
 		key := msg.String()
@@ -186,7 +181,7 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "j", "down":
 			if m.cursor < len(m.articles)-1 {
 				m.cursor++
-				if m.cursor-m.scroll >= m.height-10 {
+				if m.cursor-m.scroll >= m.visibleItems() {
 					m.scroll++
 				}
 			}
@@ -220,78 +215,213 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m tuiModel) View() string {
 	if m.nexusView {
-		return m.viewport.View() + "\n\n [ESC/X] Back to Intelligence List"
+		nexusChrome := headerStyle.Width(max(60, m.width-4)).Render(
+			lipgloss.JoinVertical(lipgloss.Left,
+				brandStyle.Render("RECON NEXUS"),
+				subtitleStyle.Render("Entity timeline view"),
+			),
+		)
+		return pageStyle.Render(nexusChrome + "\n" + m.viewport.View() + "\n" + statusMutedStyle.Render("[esc] back"))
 	}
 
-	doc := strings.Builder{}
-	doc.WriteString(tuiHeaderStyle.Render("RECON INTELLIGENCE NEXUS") + "\n")
+	if m.width == 0 || m.height == 0 {
+		return "Loading Recon..."
+	}
 
-	var listLines []string
+	header := m.renderHeader()
+	body := m.renderBody()
+	footer := m.renderFooter()
+	return pageStyle.Render(lipgloss.JoinVertical(lipgloss.Left, header, body, footer))
+}
+
+func (m tuiModel) renderHeader() string {
+	articleCount := fmt.Sprintf("%d live articles", len(m.articles))
+	sourceCount := fmt.Sprintf("%d sources", m.totalSources)
+	dateLabel := time.Now().Format("Mon Jan 02 15:04")
+	status := m.syncStatus
+	if m.isSyncing {
+		status = m.spinner.View() + " " + status
+	}
+
+	chips := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		statusMutedStyle.Render(articleCount),
+		" ",
+		statusMutedStyle.Render(sourceCount),
+		" ",
+		statusMutedStyle.Render(dateLabel),
+	)
+
+	return headerStyle.Width(max(60, m.width-4)).Render(
+		lipgloss.JoinVertical(lipgloss.Left,
+			brandStyle.Render("RECON // INTELLIGENCE NEXUS"),
+			subtitleStyle.Render("High-signal security, infra, exploit, and AI tracking"),
+			"",
+			lipgloss.JoinHorizontal(lipgloss.Left, chips, "  ", m.statusPill(status)),
+		),
+	)
+}
+
+func (m tuiModel) renderBody() string {
+	listWidth := max(44, m.width*5/12)
+	readerWidth := max(44, m.width-listWidth-6)
+
+	left := m.renderList(listWidth)
+	right := m.renderReader(readerWidth)
+	return lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right)
+}
+
+func (m tuiModel) renderList(width int) string {
+	if len(m.articles) == 0 {
+		return panelStyle.Width(width).Render(
+			lipgloss.JoinVertical(lipgloss.Left,
+				sectionTitle.Render("SIGNAL BOARD"),
+				"",
+				metaStyle.Render("No articles are loaded yet."),
+				metaStyle.Render("Run a fresh sync and this panel will populate."),
+			),
+		)
+	}
+
 	start := m.scroll
-	end := start + (m.height - 6)
-	if end > len(m.articles) {
-		end = len(m.articles)
-	}
-
+	end := min(len(m.articles), start+m.visibleItems())
+	var cards []string
+	cardWidth := width - 6
 	for i := start; i < end; i++ {
 		art := m.articles[i]
-		title := art.Title
+		title := textutil.Truncate(art.Title, max(24, cardWidth-4))
+		summary := textutil.Truncate(textutil.PlainText(art.Description), max(30, cardWidth-6))
+		metaLine := lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			scorePill(art.Score),
+			" ",
+			sourceStyle.Render(strings.ToUpper(textutil.Truncate(art.SourceName, 20))),
+			" ",
+			metaStyle.Render(ageLabel(art.Published)),
+		)
 
-		isBreaking := art.Score > 65 && time.Since(art.Published) < 4*time.Hour
-		prefix := "  "
-		displayTitle := title
+		cardBody := lipgloss.JoinVertical(
+			lipgloss.Left,
+			metaLine,
+			titleStyle.Width(cardWidth).Render(title),
+			metaStyle.Width(cardWidth).Render(summary),
+		)
 
-		if isBreaking {
-			displayTitle = "🚨 " + title
-		}
-
-		if len(displayTitle) > m.width/2-10 {
-			displayTitle = displayTitle[:m.width/2-13] + "..."
-		}
-
-		line := fmt.Sprintf("[%d] %s", art.Score, displayTitle)
+		style := cardStyle.Width(cardWidth)
 		if i == m.cursor {
-			listLines = append(listLines, selectedStyle.Render(line))
-		} else {
-			if isBreaking {
-				listLines = append(listLines, " "+lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render(line))
-			} else {
-				listLines = append(listLines, prefix+line)
-			}
+			style = selectedCard.Width(cardWidth)
+			cardBody = lipgloss.JoinVertical(
+				lipgloss.Left,
+				metaLine,
+				selectedTitle.Width(cardWidth).Render(title),
+				metaStyle.Width(cardWidth).Render(summary),
+			)
 		}
+		cards = append(cards, style.Render(cardBody))
 	}
 
-	listCol := lipgloss.NewStyle().Width(m.width / 2).Render(strings.Join(listLines, "\n"))
+	listHeader := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		sectionTitle.Render("SIGNAL BOARD"),
+		"  ",
+		metaStyle.Render(fmt.Sprintf("%d-%d of %d", start+1, end, len(m.articles))),
+	)
 
-	var readerContent string
-	if m.cursor < len(m.articles) {
-		art := m.articles[m.cursor]
-		readerContent = fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s",
-			sourceStyle.Render(art.SourceName),
-			titleStyle.Render(art.Title),
-			metaStyle.Render(art.Published.Format("2006-01-02 15:04")),
-			art.Description)
-	}
-	readerCol := lipgloss.NewStyle().
-		Width(m.width/2).
-		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(borderColor).
-		PaddingLeft(2).
-		Render(readerContent)
+	return panelStyle.Width(width).Render(
+		lipgloss.JoinVertical(lipgloss.Left, listHeader, "", strings.Join(cards, "\n")),
+	)
+}
 
-	doc.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, listCol, readerCol))
-
-	spinnerStr := ""
-	if m.isSyncing {
-		spinnerStr = m.spinner.View() + " "
+func (m tuiModel) renderReader(width int) string {
+	if len(m.articles) == 0 || m.cursor >= len(m.articles) {
+		return panelStyle.Width(width).Render(
+			lipgloss.JoinVertical(lipgloss.Left,
+				sectionTitle.Render("READER"),
+				"",
+				metaStyle.Render("Fresh articles will appear here after the next successful sync."),
+			),
+		)
 	}
 
-	footerContent := statusStyle.Render(fmt.Sprintf(" %s%s ", spinnerStr, m.syncStatus))
-	footerControls := statusStyle.Render(fmt.Sprintf(" %d SOURCES • %d ARTICLES • [X] NEXUS EVOLUTION • [O] OPEN • [Q] QUIT ", 1865, len(m.articles)))
+	art := m.articles[m.cursor]
+	host := art.Link
+	if idx := strings.Index(host, "://"); idx >= 0 {
+		host = host[idx+3:]
+	}
+	if idx := strings.Index(host, "/"); idx >= 0 {
+		host = host[:idx]
+	}
 
-	doc.WriteString("\n\n" + lipgloss.JoinHorizontal(lipgloss.Top, footerContent, " • ", footerControls))
+	reader := lipgloss.JoinVertical(
+		lipgloss.Left,
+		sectionTitle.Render("READER"),
+		"",
+		lipgloss.JoinHorizontal(lipgloss.Left, sourceStyle.Render(strings.ToUpper(art.SourceName)), " ", scorePill(art.Score), " ", metaStyle.Render(art.Published.Local().Format("2006-01-02 15:04"))),
+		"",
+		titleStyle.Width(width-6).Render(art.Title),
+		"",
+		readerTextStyle.Width(width-6).Render(textutil.PlainText(art.Description)),
+		"",
+		metaStyle.Render("Host: "+host),
+		metaStyle.Render("Link: "+textutil.Truncate(art.Link, max(24, width-12))),
+		"",
+		keyStyle.Render("[o] open")+metaStyle.Render(" in browser   ")+keyStyle.Render("[x] nexus")+metaStyle.Render(" entity timeline   ")+keyStyle.Render("[q] quit"),
+	)
 
-	return doc.String()
+	return panelStyle.Width(width).Render(reader)
+}
+
+func (m tuiModel) renderFooter() string {
+	footer := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		statusMutedStyle.Render("j/k move"),
+		" ",
+		statusMutedStyle.Render("o open"),
+		" ",
+		statusMutedStyle.Render("x nexus"),
+		" ",
+		statusMutedStyle.Render("q quit"),
+	)
+	return footer
+}
+
+func (m tuiModel) visibleItems() int {
+	return max(1, (m.height-10)/5)
+}
+
+func (m tuiModel) statusPill(text string) string {
+	if strings.Contains(strings.ToLower(text), "new") || strings.Contains(text, "landed") {
+		return statusHotStyle.Render(text)
+	}
+	return statusMutedStyle.Render(text)
+}
+
+func scorePill(score int) string {
+	bg := lipgloss.Color("#1e293b")
+	fg := lipgloss.Color("#cbd5e1")
+	if score >= 80 {
+		bg = lipgloss.Color("#7c2d12")
+		fg = lipgloss.Color("#ffedd5")
+	} else if score >= 65 {
+		bg = lipgloss.Color("#854d0e")
+		fg = lipgloss.Color("#fef3c7")
+	} else if score >= 40 {
+		bg = lipgloss.Color("#164e63")
+		fg = lipgloss.Color("#cffafe")
+	}
+	return lipgloss.NewStyle().Background(bg).Foreground(fg).Padding(0, 1).Render(fmt.Sprintf("%d", score))
+}
+
+func ageLabel(t time.Time) string {
+	d := time.Since(t)
+	switch {
+	case d < time.Hour:
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	default:
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+	}
 }
 
 func openInBrowser(url string) error {
@@ -310,4 +440,18 @@ func openInBrowser(url string) error {
 		args = []string{url}
 	}
 	return exec.Command(cmd, args...).Start()
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
