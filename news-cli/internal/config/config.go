@@ -178,7 +178,7 @@ func configFilePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "config.yaml"), nil
+	return func() string { if _, err := os.Stat(filepath.Join(dir, "config.yaml")); err == nil { return filepath.Join(dir, "config.yaml") }; return filepath.Join(dir, "config.json") }(), nil
 }
 
 // LoadConfig reads the config from disk. Returns nil if not found.
@@ -240,7 +240,7 @@ func SaveConfig(cfg *AppConfig) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	path := filepath.Join(dir, "config.yaml")
+	path := func() string { if _, err := os.Stat(filepath.Join(dir, "config.yaml")); err == nil { return filepath.Join(dir, "config.yaml") }; return filepath.Join(dir, "config.json") }()
 	return os.WriteFile(path, data, 0600)
 }
 

@@ -190,7 +190,7 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
 		FROM articles
-		WHERE substr(published_at, 1, 19) <= datetime('now', '+36 hours')
+		WHERE published_at >= datetime('now', '-48 hours')
 		ORDER BY (score * 1.0 / power(((strftime('%s','now') - strftime('%s', substr(published_at, 1, 19)))/3600.0) + 2, 1.8)) DESC
 		LIMIT ?
 	`, limit)

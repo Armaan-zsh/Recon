@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"

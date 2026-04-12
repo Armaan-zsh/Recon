@@ -2,7 +2,6 @@ package clusterer
 
 import (
 	"news-cli/internal/models"
-	"strings"
 )
 
 type Clusterer struct {
