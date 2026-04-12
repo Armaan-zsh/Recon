@@ -10,13 +10,15 @@ import (
 
 const serviceTemplate = `[Unit]
 Description=Recon - Daily Tech & CyberSec Intelligence Digest
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 TimeoutStartSec=180
 ExecStart=%s --json
 ExecStartPost=-/usr/bin/notify-send -u normal -i dialog-information "✅ Recon Ready" "Your daily intelligence digest has been synced."
-Environment=DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=%%t/bus
 `
 
 const timerTemplate = `[Unit]
@@ -32,13 +34,33 @@ WantedBy=timers.target
 
 const resumeServiceTemplate = `[Unit]
 Description=Recon digest after resume from suspend
+After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+PartOf=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
 
 [Service]
 Type=oneshot
 TimeoutStartSec=180
 ExecStartPre=/bin/sleep 10
 ExecStart=/bin/bash -c 'if [ "$(date +%%%%F)" != "$(cat %s/last_run.txt 2>/dev/null)" ]; then %s --json > /dev/null 2>&1 && date +%%%%F > %s/last_run.txt && /usr/bin/notify-send -u normal -i dialog-information "✅ Recon" "Fresh intelligence synced." || true; fi'
-Environment=DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=%%t/bus
+
+[Install]
+WantedBy=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+`
+
+const startupServiceTemplate = `[Unit]
+Description=Recon digest on user login/startup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=180
+ExecStart=/bin/bash -c 'if [ "$(date +%%%%F)" != "$(cat %s/last_run.txt 2>/dev/null)" ]; then %s --json > /dev/null 2>&1 && date +%%%%F > %s/last_run.txt && /usr/bin/notify-send -u normal -i dialog-information "✅ Recon" "Fresh intelligence synced." || true; fi'
+Environment=DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=%%t/bus
+
+[Install]
+WantedBy=default.target
 `
 
 func Install(scheduleTime string) error {
@@ -60,6 +82,9 @@ func Install(scheduleTime string) error {
 
 	cfgDir, _ := os.UserConfigDir()
 	reconCfgDir := filepath.Join(cfgDir, "recon")
+	if err := os.MkdirAll(reconCfgDir, 0755); err != nil {
+		return fmt.Errorf("failed to create recon config dir: %w", err)
+	}
 
 	serviceContent := fmt.Sprintf(serviceTemplate, binPath)
 	servicePath := filepath.Join(systemdDir, "recon-digest.service")
@@ -79,9 +104,17 @@ func Install(scheduleTime string) error {
 		return fmt.Errorf("failed to write resume service: %w", err)
 	}
 
+	startupContent := fmt.Sprintf(startupServiceTemplate, reconCfgDir, binPath, reconCfgDir)
+	startupPath := filepath.Join(systemdDir, "recon-startup.service")
+	if err := os.WriteFile(startupPath, []byte(startupContent), 0644); err != nil {
+		return fmt.Errorf("failed to write startup service: %w", err)
+	}
+
 	cmds := [][]string{
 		{"systemctl", "--user", "daemon-reload"},
 		{"systemctl", "--user", "enable", "--now", "recon-digest.timer"},
+		{"systemctl", "--user", "enable", "--now", "recon-startup.service"},
+		{"systemctl", "--user", "enable", "recon-resume.service"},
 	}
 
 	for _, args := range cmds {
@@ -99,6 +132,8 @@ func Install(scheduleTime string) error {
 func Disable() error {
 	cmds := [][]string{
 		{"systemctl", "--user", "disable", "--now", "recon-digest.timer"},
+		{"systemctl", "--user", "disable", "--now", "recon-startup.service"},
+		{"systemctl", "--user", "disable", "recon-resume.service"},
 	}
 
 	for _, args := range cmds {

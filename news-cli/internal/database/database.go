@@ -6,7 +6,6 @@ import (
 	"math"
 	"news-cli/internal/clusterer"
 	"news-cli/internal/models"
-	"news-cli/internal/scorer"
 	"os"
 	"path/filepath"
 	"sort"
@@ -129,7 +128,7 @@ func (i *IntelligenceDB) SaveArticle(art models.Article, entities []string) erro
 		ON CONFLICT(hash) DO UPDATE SET
 			score = excluded.score,
 			summary = excluded.summary;
-	`, art.Hash(), art.Title, art.Link, art.Published, art.SourceName, art.Score, art.Description)
+	`, art.Hash(), art.Title, art.Link, art.Published.UTC().Format("2006-01-02 15:04:05"), art.SourceName, art.Score, art.Description)
 	if err != nil {
 		return err
 	}
@@ -191,7 +190,7 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 		SELECT title, link, published_at, source_name, score, summary
 		FROM articles
 		WHERE published_at >= datetime('now', '-48 hours')
-		ORDER BY (score * 1.0 / power(((strftime('%s','now') - strftime('%s', substr(published_at, 1, 19)))/3600.0) + 2, 1.8)) DESC
+		ORDER BY (score * 1.0 / power(((strftime('%s','now') - strftime('%s', published_at))/3600.0) + 2, 1.8)) DESC
 		LIMIT ?
 	`, limit)
 	if err != nil {
@@ -207,8 +206,6 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 			return nil, err
 		}
 		a.Published = publishedAt
-
-		scorer.ScoreArticle(&a, nil)
 		articles = append(articles, a)
 	}
 

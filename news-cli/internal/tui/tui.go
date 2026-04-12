@@ -64,17 +64,17 @@ type syncCompleteMsg struct {
 func performBackgroundSync(db *database.IntelligenceDB, keywords []string, torProxy string, feedData []byte, currentHashes map[string]bool) tea.Cmd {
 	return func() tea.Msg {
 		if db == nil {
-			return nil
+			return syncCompleteMsg{}
 		}
 
 		lastSync := db.GetLastSyncTime()
 		if time.Since(lastSync) < 15*time.Minute {
-			return nil
+			return syncCompleteMsg{}
 		}
 
 		res, err := fetcher.FetchAll(context.Background(), keywords, torProxy, db, feedData)
 		if err != nil || len(res.Articles) == 0 {
-			return nil
+			return syncCompleteMsg{}
 		}
 		_ = db.SetLastSyncTime(time.Now())
 

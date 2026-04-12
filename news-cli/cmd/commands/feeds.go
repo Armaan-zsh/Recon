@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"news-cli/internal/feeds"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,36 +23,16 @@ type FeedsData struct {
 }
 
 func getFeedsFilePath() (string, error) {
-	// Try current directory first
-	cwd, err := os.Getwd()
-	if err == nil {
-		localPath := filepath.Join(cwd, "links.json")
-		if _, err := os.Stat(localPath); err == nil {
-			return localPath, nil
-		}
-	}
-
-	// Try config directory
-	configDir, err := os.UserConfigDir()
+	path, err := feeds.Path()
 	if err != nil {
-		return "", fmt.Errorf("could not determine config directory: %w", err)
+		return "", err
 	}
 
-	appConfigDir := filepath.Join(configDir, "recon")
-	feedsPath := filepath.Join(appConfigDir, "links.json")
-
-	// Check if exists, if not create from embedded or default
-	if _, err := os.Stat(feedsPath); err == nil {
-		return feedsPath, nil
-	}
-
-	// Create directory if needed
-	if err := os.MkdirAll(appConfigDir, 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return "", fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	// Return path even if doesn't exist yet (for add command)
-	return feedsPath, nil
+	return path, nil
 }
 
 func loadFeeds() (*FeedsData, error) {
