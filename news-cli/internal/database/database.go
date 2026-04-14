@@ -78,34 +78,43 @@ func InitDB() (*IntelligenceDB, error) {
 		value TEXT
 	);
 
-	-- FTS5 Search Table
-	CREATE VIRTUAL TABLE IF NOT EXISTS article_search USING fts5(
-		hash UNINDEXED,
-		title,
-		summary,
-		source_name UNINDEXED,
-		content='articles',
-		content_rowid='hash'
-	);
-
-	-- Triggers to keep FTS5 in sync
-	CREATE TRIGGER IF NOT EXISTS trg_articles_ai AFTER INSERT ON articles BEGIN
-		INSERT INTO article_search(rowid, title, summary) VALUES (new.hash, new.title, new.summary);
-	END;
-	CREATE TRIGGER IF NOT EXISTS trg_articles_ad AFTER DELETE ON articles BEGIN
-		INSERT INTO article_search(article_search, rowid, title, summary) VALUES('delete', old.hash, old.title, old.summary);
-	END;
-	CREATE TRIGGER IF NOT EXISTS trg_articles_au AFTER UPDATE ON articles BEGIN
-		INSERT INTO article_search(article_search, rowid, title, summary) VALUES('delete', old.hash, old.title, old.summary);
-		INSERT INTO article_search(rowid, title, summary) VALUES(new.hash, new.title, new.summary);
-	END;
-
 	CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published_at);
 	CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
 	CREATE INDEX IF NOT EXISTS idx_articles_score ON articles(score DESC);
 	`
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
+	}
+
+	ftsSchema := `
+	DROP TRIGGER IF EXISTS trg_articles_ai;
+	DROP TRIGGER IF EXISTS trg_articles_ad;
+	DROP TRIGGER IF EXISTS trg_articles_au;
+	DROP TABLE IF EXISTS article_search;
+
+	CREATE VIRTUAL TABLE article_search USING fts5(
+		hash UNINDEXED,
+		title,
+		summary,
+		source_name UNINDEXED
+	);
+
+	CREATE TRIGGER trg_articles_ai AFTER INSERT ON articles BEGIN
+		INSERT INTO article_search(hash, title, summary, source_name) VALUES (new.hash, new.title, new.summary, new.source_name);
+	END;
+	CREATE TRIGGER trg_articles_ad AFTER DELETE ON articles BEGIN
+		INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
+	END;
+	CREATE TRIGGER trg_articles_au AFTER UPDATE ON articles BEGIN
+		INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
+		INSERT INTO article_search(hash, title, summary, source_name) VALUES(new.hash, new.title, new.summary, new.source_name);
+	END;
+
+	INSERT INTO article_search(hash, title, summary, source_name)
+	SELECT hash, title, summary, source_name FROM articles;
+	`
+	if _, err := db.Exec(ftsSchema); err != nil {
+		return nil, fmt.Errorf("failed to initialize FTS schema: %w", err)
 	}
 
 	return &IntelligenceDB{db: db}, nil
@@ -231,7 +240,7 @@ func (i *IntelligenceDB) SearchArticles(query string, afterDate time.Time, minSc
 	rows, err := i.db.Query(`
 		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
 		FROM articles a
-		JOIN article_search s ON a.hash = s.rowid
+		JOIN article_search s ON a.hash = s.hash
 		WHERE article_search MATCH ?
 		AND a.published_at >= ?
 		AND a.score >= ?

@@ -14,27 +14,55 @@ var (
 	CvePattern      = regexp.MustCompile(`(?i)CVE-\d{4}-\d+`)
 )
 
-var HighValueSources = map[string]bool{
-	"Simon Willison":           true,
-	"George Hotz (geohot)":     true,
-	"Julia Evans (jvns)":       true,
-	"Dan Luu":                  true,
-	"Filippo Valsorda":         true,
-	"Tavis Ormandy":            true,
-	"Qualys Threat Research":   true,
-	"Rapid7 Blog":              true,
-	"CrowdStrike":              true,
-	"Palo Alto Unit 42":        true,
-	"Mandiant (Google Cloud)":  true,
-	"Cisco Talos":              true,
-	"Krebs on Security":        true,
-	"Phoronix (Linux)":         true,
-	"The Hacker News":          true,
-	"Elastic Security Labs":    true,
-	"Palo Alto Networks":       true,
-	"Check Point Research":     true,
-	"BleepingComputer":         true,
-	"The Register (Security)":  true,
+var ResearchSources = map[string]int{
+	"Simon Willison":              45,
+	"George Hotz (geohot)":        35,
+	"Julia Evans (jvns)":          45,
+	"Dan Luu":                     40,
+	"Filippo Valsorda":            45,
+	"Tavis Ormandy":               45,
+	"Qualys Threat Research":      40,
+	"Rapid7 Blog":                 35,
+	"CrowdStrike":                 28,
+	"www.crowdstrike.com/blog":    28,
+	"Palo Alto Unit 42":           38,
+	"Mandiant (Google Cloud)":     38,
+	"Cisco Talos":                 38,
+	"Krebs on Security":           35,
+	"Elastic Security Labs":       35,
+	"Palo Alto Networks":          30,
+	"Check Point Research":        35,
+	"Google Project Zero":         50,
+	"Project Zero":                50,
+	"Trail of Bits":               45,
+	"The DFIR Report":             50,
+	"Microsoft Security Blog":     32,
+	"SentinelOne Labs":            36,
+	"Huntress Blog":               34,
+	"Google Online Security Blog": 36,
+	"Cloudflare Blog (Security)":  30,
+	"OpenAI Blog":                 24,
+	"Red Canary":                  30,
+	"The Red Canary Blog: Information Security Insights": 30,
+}
+
+var NewsDeskSources = map[string]int{
+	"BleepingComputer":               12,
+	"The Register (Security)":        12,
+	"The Hacker News":                8,
+	"SecurityWeek":                   10,
+	"The Record from Recorded Future News": 12,
+	"Phoronix (Linux)":               8,
+}
+
+var LowSignalSources = map[string]int{
+	"InfoSec Write-ups - Medium":              45,
+	"Bug Bounty in InfoSec Write-ups on Medium": 50,
+	"Have I been pwned? latest breaches":      40,
+	"Security Affairs":                        25,
+	"VentureBeat":                             15,
+	"TechCrunch":                              18,
+	"Wired":                                   18,
 }
 
 func ScoreArticle(a *models.Article, keywords []string) {
@@ -91,6 +119,18 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		score += 5
 	}
 
+	blogKeys := []string{
+		"research", "deep dive", "analysis", "write-up", "writeup", "walkthrough",
+		"postmortem", "incident report", "reverse engineering", "lessons learned",
+		"root cause", "case study", "forensic", "investigation", "showed us",
+	}
+	for _, k := range blogKeys {
+		if strings.Contains(text, k) {
+			score += 12
+			signalHits++
+		}
+	}
+
 	topicKeys := []string{
 		"security", "vulnerability", "exploit", "malware", "ransomware", "breach",
 		"privacy", "surveillance", "cryptography", "encryption", "supply chain",
@@ -103,10 +143,11 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		}
 	}
 
-	if HighValueSources[a.SourceName] {
-		if keywordHits > 0 || signalHits > 0 {
-			score += 50
-		}
+	if bonus, ok := ResearchSources[a.SourceName]; ok && (keywordHits > 0 || signalHits > 0) {
+		score += bonus
+	}
+	if bonus, ok := NewsDeskSources[a.SourceName]; ok && (keywordHits > 0 || signalHits > 0) {
+		score += bonus
 	}
 
 	loadOnce.Do(func() {
@@ -127,7 +168,7 @@ func ScoreArticle(a *models.Article, keywords []string) {
 	lowSignalDomains := []string{"medium.com", "dev.to", "hashnode.com"}
 	for _, d := range lowSignalDomains {
 		if strings.Contains(strings.ToLower(a.Link), d) {
-			score -= 25
+			score -= 40
 		}
 	}
 
@@ -135,6 +176,27 @@ func ScoreArticle(a *models.Article, keywords []string) {
 	for _, k := range fluffKeys {
 		if strings.Contains(text, k) {
 			score -= 40
+		}
+	}
+
+	newsletterKeys := []string{"newsletter", "roundup", "round ", "latest breaches", "weekly", "daily digest", "digest", "patch tuesday", "security affairs newsletter"}
+	for _, k := range newsletterKeys {
+		if strings.Contains(text, k) {
+			score -= 35
+		}
+	}
+
+	advisoryKeys := []string{"security advisory", "advisory", "patches", "released updates", "updates available", "hotfix"}
+	for _, k := range advisoryKeys {
+		if strings.Contains(text, k) {
+			score -= 18
+		}
+	}
+
+	for source, penalty := range LowSignalSources {
+		if a.SourceName == source {
+			score -= penalty
+			break
 		}
 	}
 

@@ -14,6 +14,7 @@ import (
 	"news-cli/internal/feeds"
 	"news-cli/internal/fetcher"
 	"news-cli/internal/models"
+	"news-cli/internal/notifier"
 	"news-cli/internal/renderer"
 	"news-cli/internal/schedule"
 	"news-cli/internal/scorer"
@@ -143,6 +144,10 @@ func loadArticles(ctx context.Context, db *database.IntelligenceDB, keywords []s
 	if err != nil {
 		return nil, fmt.Errorf("failed to load recent articles: %w", err)
 	}
+	currentHashes := make(map[string]bool, len(articles))
+	for _, article := range articles {
+		currentHashes[article.Hash()] = true
+	}
 
 	lastSync := db.GetLastSyncTime()
 	needsSync := len(articles) == 0 || lastSync.IsZero() || time.Since(lastSync) > 4*time.Hour
@@ -171,12 +176,34 @@ func loadArticles(ctx context.Context, db *database.IntelligenceDB, keywords []s
 
 	refreshed, err := db.GetRecentArticles(200)
 	if err == nil && len(refreshed) > 0 {
+		maybeNotify(currentHashes, refreshed)
 		return refreshed, nil
 	}
 	if len(res.Articles) > 0 {
+		maybeNotify(currentHashes, res.Articles)
 		return res.Articles, nil
 	}
 	return articles, nil
+}
+
+func maybeNotify(currentHashes map[string]bool, articles []models.Article) {
+	if len(articles) == 0 {
+		return
+	}
+
+	newCount := 0
+	var lead models.Article
+	for _, article := range articles {
+		if !currentHashes[article.Hash()] {
+			if newCount == 0 {
+				lead = article
+			}
+			newCount++
+		}
+	}
+	if newCount > 0 {
+		notifier.NotifyNewArticles(newCount, lead)
+	}
 }
 '''
 

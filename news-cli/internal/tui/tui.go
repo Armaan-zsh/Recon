@@ -21,22 +21,22 @@ import (
 )
 
 var (
-	pageStyle        = lipgloss.NewStyle().Background(lipgloss.Color("#0b1016")).Foreground(lipgloss.Color("#edf2f7"))
-	panelStyle       = lipgloss.NewStyle().Background(lipgloss.Color("#111827")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#243244")).Padding(1, 2)
-	headerStyle      = lipgloss.NewStyle().Background(lipgloss.Color("#111827")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#155e75")).Padding(1, 2)
-	brandStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f59e0b"))
-	subtitleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#93c5fd"))
-	sectionTitle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#67e8f9"))
-	selectedCard     = lipgloss.NewStyle().Background(lipgloss.Color("#172033")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#f59e0b")).Padding(1, 1)
-	cardStyle        = lipgloss.NewStyle().Background(lipgloss.Color("#0f172a")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#1f2937")).Padding(1, 1)
-	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f8fafc"))
-	selectedTitle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#fde68a"))
-	metaStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#94a3b8"))
-	readerTextStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#dbe4ee"))
-	sourceStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22d3ee"))
-	keyStyle         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f59e0b"))
-	statusMutedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cbd5e1")).Background(lipgloss.Color("#13202f")).Padding(0, 1)
-	statusHotStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#fff7ed")).Background(lipgloss.Color("#9a3412")).Padding(0, 1)
+	pageStyle        = lipgloss.NewStyle().Background(lipgloss.Color("#141210")).Foreground(lipgloss.Color("#f1e9dc"))
+	panelStyle       = lipgloss.NewStyle().Background(lipgloss.Color("#1d1a17")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#3b342d")).Padding(1, 2)
+	headerStyle      = lipgloss.NewStyle().Background(lipgloss.Color("#1f1b18")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#4a3d33")).Padding(1, 2)
+	brandStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#e58b4a"))
+	subtitleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#c7b7a2"))
+	sectionTitle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#d8c6b2"))
+	selectedCard     = lipgloss.NewStyle().Background(lipgloss.Color("#28221d")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#e58b4a")).Padding(1, 1)
+	cardStyle        = lipgloss.NewStyle().Background(lipgloss.Color("#1a1714")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#2b2622")).Padding(1, 1)
+	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f7f0e6"))
+	selectedTitle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffd3a1"))
+	metaStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#a79a8b"))
+	readerTextStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#e8ddcf"))
+	sourceStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#d9a066"))
+	keyStyle         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#e58b4a"))
+	statusMutedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#eadfce")).Background(lipgloss.Color("#2a241f")).Padding(0, 1)
+	statusHotStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#fff3e8")).Background(lipgloss.Color("#8f4a25")).Padding(0, 1)
 )
 
 type tuiModel struct {
@@ -398,16 +398,18 @@ func (m tuiModel) statusPill(text string) string {
 
 func scorePill(score int) string {
 	bg := lipgloss.Color("#1e293b")
-	fg := lipgloss.Color("#cbd5e1")
+	fg := lipgloss.Color("#eadfce")
 	if score >= 80 {
-		bg = lipgloss.Color("#7c2d12")
-		fg = lipgloss.Color("#ffedd5")
+		bg = lipgloss.Color("#87451d")
+		fg = lipgloss.Color("#fff1e7")
 	} else if score >= 65 {
-		bg = lipgloss.Color("#854d0e")
-		fg = lipgloss.Color("#fef3c7")
+		bg = lipgloss.Color("#6a4a2a")
+		fg = lipgloss.Color("#f7ebd5")
 	} else if score >= 40 {
-		bg = lipgloss.Color("#164e63")
-		fg = lipgloss.Color("#cffafe")
+		bg = lipgloss.Color("#4b3a2b")
+		fg = lipgloss.Color("#f0e2d0")
+	} else {
+		bg = lipgloss.Color("#332d28")
 	}
 	return lipgloss.NewStyle().Background(bg).Foreground(fg).Padding(0, 1).Render(fmt.Sprintf("%d", score))
 }
