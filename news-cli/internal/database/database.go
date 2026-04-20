@@ -18,6 +18,11 @@ type IntelligenceDB struct {
 	db *sql.DB
 }
 
+type ArchiveDay struct {
+	Date  string
+	Count int
+}
+
 func InitDB() (*IntelligenceDB, error) {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -40,6 +45,7 @@ func InitDB() (*IntelligenceDB, error) {
 	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
 	}
+	_, _ = db.Exec("PRAGMA busy_timeout=5000;")
 
 	schema := `
 	CREATE TABLE IF NOT EXISTS articles (
@@ -78,6 +84,13 @@ func InitDB() (*IntelligenceDB, error) {
 		value TEXT
 	);
 
+	CREATE TABLE IF NOT EXISTS feed_cache (
+		url TEXT PRIMARY KEY,
+		etag TEXT,
+		last_modified TEXT,
+		last_fetched_at DATETIME
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published_at);
 	CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
 	CREATE INDEX IF NOT EXISTS idx_articles_score ON articles(score DESC);
@@ -86,35 +99,64 @@ func InitDB() (*IntelligenceDB, error) {
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
-	ftsSchema := `
-	DROP TRIGGER IF EXISTS trg_articles_ai;
-	DROP TRIGGER IF EXISTS trg_articles_ad;
-	DROP TRIGGER IF EXISTS trg_articles_au;
-	DROP TABLE IF EXISTS article_search;
+	var ftsVersion string
+	_ = db.QueryRow("SELECT value FROM system_state WHERE key = 'fts_version'").Scan(&ftsVersion)
 
-	CREATE VIRTUAL TABLE article_search USING fts5(
-		hash UNINDEXED,
-		title,
-		summary,
-		source_name UNINDEXED
-	);
+	if ftsVersion != "2" {
+		ftsMigrate := `
+		DROP TRIGGER IF EXISTS trg_articles_ai;
+		DROP TRIGGER IF EXISTS trg_articles_ad;
+		DROP TRIGGER IF EXISTS trg_articles_au;
+		DROP TABLE IF EXISTS article_search;
 
-	CREATE TRIGGER trg_articles_ai AFTER INSERT ON articles BEGIN
-		INSERT INTO article_search(hash, title, summary, source_name) VALUES (new.hash, new.title, new.summary, new.source_name);
-	END;
-	CREATE TRIGGER trg_articles_ad AFTER DELETE ON articles BEGIN
-		INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
-	END;
-	CREATE TRIGGER trg_articles_au AFTER UPDATE ON articles BEGIN
-		INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
-		INSERT INTO article_search(hash, title, summary, source_name) VALUES(new.hash, new.title, new.summary, new.source_name);
-	END;
+		CREATE VIRTUAL TABLE article_search USING fts5(
+			hash UNINDEXED,
+			title,
+			summary,
+			source_name UNINDEXED
+		);
 
-	INSERT INTO article_search(hash, title, summary, source_name)
-	SELECT hash, title, summary, source_name FROM articles;
-	`
-	if _, err := db.Exec(ftsSchema); err != nil {
-		return nil, fmt.Errorf("failed to initialize FTS schema: %w", err)
+		CREATE TRIGGER trg_articles_ai AFTER INSERT ON articles BEGIN
+			INSERT INTO article_search(hash, title, summary, source_name) VALUES (new.hash, new.title, new.summary, new.source_name);
+		END;
+		CREATE TRIGGER trg_articles_ad AFTER DELETE ON articles BEGIN
+			INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
+		END;
+		CREATE TRIGGER trg_articles_au AFTER UPDATE ON articles BEGIN
+			INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
+			INSERT INTO article_search(hash, title, summary, source_name) VALUES(new.hash, new.title, new.summary, new.source_name);
+		END;
+
+		INSERT INTO article_search(hash, title, summary, source_name)
+		SELECT hash, title, summary, source_name FROM articles;
+		`
+		if _, err := db.Exec(ftsMigrate); err != nil {
+			return nil, fmt.Errorf("failed to migrate FTS schema: %w", err)
+		}
+		_, _ = db.Exec("INSERT INTO system_state (key, value) VALUES ('fts_version', '2') ON CONFLICT(key) DO UPDATE SET value='2'")
+	} else {
+		ftsEnsure := `
+		CREATE VIRTUAL TABLE IF NOT EXISTS article_search USING fts5(
+			hash UNINDEXED,
+			title,
+			summary,
+			source_name UNINDEXED
+		);
+
+		CREATE TRIGGER IF NOT EXISTS trg_articles_ai AFTER INSERT ON articles BEGIN
+			INSERT INTO article_search(hash, title, summary, source_name) VALUES (new.hash, new.title, new.summary, new.source_name);
+		END;
+		CREATE TRIGGER IF NOT EXISTS trg_articles_ad AFTER DELETE ON articles BEGIN
+			INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
+		END;
+		CREATE TRIGGER IF NOT EXISTS trg_articles_au AFTER UPDATE ON articles BEGIN
+			INSERT INTO article_search(article_search, hash, title, summary, source_name) VALUES('delete', old.hash, old.title, old.summary, old.source_name);
+			INSERT INTO article_search(hash, title, summary, source_name) VALUES(new.hash, new.title, new.summary, new.source_name);
+		END;
+		`
+		if _, err := db.Exec(ftsEnsure); err != nil {
+			return nil, fmt.Errorf("failed to ensure FTS schema: %w", err)
+		}
 	}
 
 	return &IntelligenceDB{db: db}, nil
@@ -236,6 +278,27 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 	return unique, nil
 }
 
+func (i *IntelligenceDB) GetFeedCache(url string) (string, string, error) {
+	var etag, lastModified string
+	err := i.db.QueryRow(`SELECT etag, last_modified FROM feed_cache WHERE url = ?`, url).Scan(&etag, &lastModified)
+	if err == sql.ErrNoRows {
+		return "", "", nil
+	}
+	return etag, lastModified, err
+}
+
+func (i *IntelligenceDB) SetFeedCache(url string, etag string, lastModified string) error {
+	_, err := i.db.Exec(`
+		INSERT INTO feed_cache (url, etag, last_modified, last_fetched_at)
+		VALUES (?, ?, ?, datetime('now'))
+		ON CONFLICT(url) DO UPDATE SET
+			etag = excluded.etag,
+			last_modified = excluded.last_modified,
+			last_fetched_at = excluded.last_fetched_at
+	`, url, etag, lastModified)
+	return err
+}
+
 func (i *IntelligenceDB) SearchArticles(query string, afterDate time.Time, minScore int) ([]models.Article, error) {
 	rows, err := i.db.Query(`
 		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
@@ -326,7 +389,144 @@ func (i *IntelligenceDB) GetTrendingEntities(hours int, limit int) ([]models.Ent
 		if err := rows.Scan(&e.Name, &e.Type, &count); err != nil {
 			return nil, err
 		}
+		if e.Type == "" || e.Type == "UNKNOWN" {
+			if len(e.Name) >= 4 && e.Name[:4] == "CVE-" {
+				e.Type = "cve"
+			}
+		}
+		e.Mentions = count
 		entities = append(entities, e)
 	}
 	return entities, nil
+}
+
+func (i *IntelligenceDB) GetArticlesByDate(date string, limit int) ([]models.Article, error) {
+	rows, err := i.db.Query(`
+		SELECT title, link, published_at, source_name, score, summary
+		FROM articles
+		WHERE substr(published_at, 1, 10) = ?
+		ORDER BY score DESC, published_at DESC
+		LIMIT ?
+	`, date, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var articles []models.Article
+	for rows.Next() {
+		var a models.Article
+		var publishedAt time.Time
+		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
+			return nil, err
+		}
+		a.Published = publishedAt
+		articles = append(articles, a)
+	}
+	return articles, nil
+}
+
+func (i *IntelligenceDB) GetEntityGraph() ([]models.EntityNode, []models.EntityEdge, error) {
+	nodeRows, err := i.db.Query(`
+		SELECT e.name, e.type, COUNT(*) as mention_count
+		FROM entities e
+		JOIN article_entities ae ON e.name = ae.entity_name
+		GROUP BY e.name, e.type
+		ORDER BY mention_count DESC
+	`)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer nodeRows.Close()
+
+	var nodes []models.EntityNode
+	for nodeRows.Next() {
+		var id, typ string
+		var mentions int
+		if err := nodeRows.Scan(&id, &typ, &mentions); err != nil {
+			return nil, nil, err
+		}
+		if typ == "" || typ == "UNKNOWN" {
+			if len(id) >= 4 && id[:4] == "CVE-" {
+				typ = "cve"
+			}
+		}
+		nodes = append(nodes, models.EntityNode{ID: id, Type: typ, Mentions: mentions})
+	}
+
+	edgeRows, err := i.db.Query(`
+		SELECT ae1.entity_name, ae2.entity_name, COUNT(*) as weight
+		FROM article_entities ae1
+		JOIN article_entities ae2
+			ON ae1.article_hash = ae2.article_hash
+			AND ae1.entity_name < ae2.entity_name
+		GROUP BY ae1.entity_name, ae2.entity_name
+		ORDER BY weight DESC
+	`)
+	if err != nil {
+		return nodes, nil, err
+	}
+	defer edgeRows.Close()
+
+	var edges []models.EntityEdge
+	for edgeRows.Next() {
+		var src, dst string
+		var weight int
+		if err := edgeRows.Scan(&src, &dst, &weight); err != nil {
+			return nodes, nil, err
+		}
+		edges = append(edges, models.EntityEdge{Source: src, Target: dst, Weight: weight})
+	}
+
+	return nodes, edges, nil
+}
+
+func (i *IntelligenceDB) GetArchiveDays() ([]ArchiveDay, error) {
+	rows, err := i.db.Query(`
+		SELECT substr(published_at, 1, 10) as d, COUNT(*) as c
+		FROM articles
+		GROUP BY d
+		ORDER BY d DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var days []ArchiveDay
+	for rows.Next() {
+		var d ArchiveDay
+		if err := rows.Scan(&d.Date, &d.Count); err != nil {
+			return nil, err
+		}
+		days = append(days, d)
+	}
+	return days, nil
+}
+
+func (i *IntelligenceDB) GetArticlesByEntity(entityName string) ([]models.Article, error) {
+	rows, err := i.db.Query(`
+		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
+		FROM articles a
+		JOIN article_entities ae ON a.hash = ae.article_hash
+		WHERE ae.entity_name = ?
+		ORDER BY a.published_at DESC
+		LIMIT 20
+	`, entityName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var articles []models.Article
+	for rows.Next() {
+		var a models.Article
+		var publishedAt time.Time
+		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
+			return nil, err
+		}
+		a.Published = publishedAt
+		articles = append(articles, a)
+	}
+	return articles, nil
 }

@@ -47,22 +47,26 @@ var ResearchSources = map[string]int{
 }
 
 var NewsDeskSources = map[string]int{
-	"BleepingComputer":               12,
-	"The Register (Security)":        12,
-	"The Hacker News":                8,
-	"SecurityWeek":                   10,
+	"BleepingComputer":                     12,
+	"The Register (Security)":              12,
+	"The Hacker News":                      8,
+	"SecurityWeek":                         10,
 	"The Record from Recorded Future News": 12,
-	"Phoronix (Linux)":               8,
+	"Phoronix (Linux)":                     8,
 }
 
 var LowSignalSources = map[string]int{
-	"InfoSec Write-ups - Medium":              45,
+	"InfoSec Write-ups - Medium":                45,
 	"Bug Bounty in InfoSec Write-ups on Medium": 50,
-	"Have I been pwned? latest breaches":      40,
-	"Security Affairs":                        25,
-	"VentureBeat":                             15,
-	"TechCrunch":                              18,
-	"Wired":                                   18,
+	"Have I been pwned? latest breaches":        40,
+	"Security Affairs":                          25,
+	"VentureBeat":                               15,
+	"TechCrunch":                                18,
+	"Wired":                                     18,
+	"Cybersecurity News":                        90,
+	"VulDB Recent Entries":                      140,
+	"CXSecurity: World Laboratory of Bugtraq 2": 140,
+	"defend.network":                            90,
 }
 
 func ScoreArticle(a *models.Article, keywords []string) {
@@ -70,6 +74,7 @@ func ScoreArticle(a *models.Article, keywords []string) {
 	text := strings.ToLower(a.Title + " " + a.Description)
 	keywordHits := 0
 	signalHits := 0
+	hasNarrative := false
 
 	for _, kw := range keywords {
 		if strings.Contains(text, strings.ToLower(kw)) {
@@ -98,6 +103,7 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		if strings.Contains(text, k) {
 			score += 10
 			signalHits++
+			hasNarrative = true
 		}
 	}
 
@@ -112,6 +118,7 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		if isNarrative {
 			score += 20
 			signalHits++
+			hasNarrative = true
 		}
 	}
 
@@ -155,9 +162,11 @@ func ScoreArticle(a *models.Article, keywords []string) {
 	})
 
 	cves := CvePattern.FindAllString(strings.ToUpper(a.Title+" "+a.Description), -1)
-	for _, cve := range cves {
-		score += GetKEVScoreBoost(cve)
-		score += GetEPSSScoreBoost(cve)
+	if hasNarrative || !AdvisoryPattern.MatchString(a.Title) {
+		for _, cve := range cves {
+			score += GetKEVScoreBoost(cve)
+			score += GetEPSSScoreBoost(cve)
+		}
 	}
 
 	if strings.Contains(text, "zero-day") || strings.Contains(text, "0day") {
@@ -165,7 +174,7 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		signalHits++
 	}
 
-	lowSignalDomains := []string{"medium.com", "dev.to", "hashnode.com"}
+	lowSignalDomains := []string{"medium.com", "dev.to", "hashnode.com", "cxsecurity.com", "vuldb.com", "cybersecuritynews.com", "defend.network"}
 	for _, d := range lowSignalDomains {
 		if strings.Contains(strings.ToLower(a.Link), d) {
 			score -= 40
@@ -179,11 +188,15 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		}
 	}
 
-	newsletterKeys := []string{"newsletter", "roundup", "round ", "latest breaches", "weekly", "daily digest", "digest", "patch tuesday", "security affairs newsletter"}
+	newsletterKeys := []string{"newsletter", "roundup", "round ", "latest breaches", "weekly", "daily digest", "digest", "patch tuesday", "security affairs newsletter", "daily threat briefing", "threat briefing", "threat report"}
 	for _, k := range newsletterKeys {
 		if strings.Contains(text, k) {
 			score -= 35
 		}
+	}
+
+	if strings.Contains(text, "threat intelligence report") || strings.Contains(text, "intel report") {
+		score -= 45
 	}
 
 	advisoryKeys := []string{"security advisory", "advisory", "patches", "released updates", "updates available", "hotfix"}
@@ -191,6 +204,10 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		if strings.Contains(text, k) {
 			score -= 18
 		}
+	}
+
+	if AdvisoryPattern.MatchString(a.Title) && !hasNarrative {
+		score -= 80
 	}
 
 	for source, penalty := range LowSignalSources {

@@ -26,8 +26,6 @@ func FetchDragnetFeeds(ctx context.Context) []models.Article {
 	fp.Client = client
 	fp.UserAgent = "Recon-Dragnet/1.0 (+https://github.com/recon-cli)"
 
-	cutoff := time.Now().Add(-48 * time.Hour)
-
 	for _, query := range DragnetQueries {
 		encodedQuery := url.QueryEscape(query)
 		feedURL := fmt.Sprintf("https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en", encodedQuery)
@@ -47,7 +45,7 @@ func FetchDragnetFeeds(ctx context.Context) []models.Article {
 			}
 
 			// Reject if no date or older than 48h
-			if pubDate.IsZero() || !pubDate.After(cutoff) {
+			if pubDate.IsZero() {
 				continue
 			}
 

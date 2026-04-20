@@ -49,8 +49,21 @@ type ClusterGroup struct {
 }
 
 type Entity struct {
-	Name string
-	Type string
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Mentions int    `json:"mentions"`
+}
+
+type EntityNode struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Mentions int    `json:"mentions"`
+}
+
+type EntityEdge struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+	Weight int    `json:"weight"`
 }
 
 type TimelineEntry struct {

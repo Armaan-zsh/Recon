@@ -1,8 +1,11 @@
 package fetcher
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"news-cli/internal/aggregators"
@@ -45,13 +48,10 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(500)
 
-	// STRICT 48-HOUR WINDOW
-	cutoff := time.Now().Add(-48 * time.Hour)
-
 	for _, src := range feeds {
 		src := src
 		g.Go(func() error {
-			feedArticles, err := fetchSingleFeed(ctx, src, torProxy)
+			feedArticles, err := fetchSingleFeed(ctx, src, torProxy, db)
 			if err != nil {
 				return nil
 			}
@@ -62,10 +62,6 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 
 			validArticles := []models.Article{}
 			for _, a := range feedArticles {
-				if !a.Published.After(cutoff) {
-					continue
-				}
-
 				scorer.ScoreArticle(&a, keywords)
 				if a.Score > 5 {
 					validArticles = append(validArticles, a)
@@ -88,9 +84,6 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 		dragnetArticles := aggregators.FetchDragnetFeeds(ctx)
 		var validArticles []models.Article
 		for _, a := range dragnetArticles {
-			if !a.Published.After(cutoff) {
-				continue
-			}
 			scorer.ScoreArticle(&a, keywords)
 			validArticles = append(validArticles, a)
 
@@ -113,9 +106,7 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 			if err == nil {
 				mu.Lock()
 				for _, a := range robinArticles {
-					if a.Published.After(cutoff) {
-						articles = append(articles, a)
-					}
+					articles = append(articles, a)
 				}
 				mu.Unlock()
 			}
@@ -158,7 +149,7 @@ func LoadFeeds(data []byte) ([]models.FeedSource, error) {
 	return payload.Links, nil
 }
 
-func fetchSingleFeed(ctx context.Context, source models.FeedSource, torProxy string) ([]models.Article, error) {
+func fetchSingleFeed(ctx context.Context, source models.FeedSource, torProxy string, db *database.IntelligenceDB) ([]models.Article, error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	fp := gofeed.NewParser()
 	fp.UserAgent = "Recon/2.0 (+https://github.com/recon-cli)"
@@ -175,7 +166,57 @@ func fetchSingleFeed(ctx context.Context, source models.FeedSource, torProxy str
 	}
 	fp.Client = client
 
-	feed, err := fp.ParseURLWithContext(source.URL, ctx)
+	var etag, lastModified string
+	if db != nil {
+		etag, lastModified, _ = db.GetFeedCache(source.URL)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", source.URL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", fp.UserAgent)
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
+	if lastModified != "" {
+		req.Header.Set("If-Modified-Since", lastModified)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotModified {
+		if db != nil {
+			_ = db.SetFeedCache(source.URL, etag, lastModified)
+		}
+		return nil, nil
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("feed http %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	newETag := resp.Header.Get("ETag")
+	newLastModified := resp.Header.Get("Last-Modified")
+	if newETag == "" {
+		newETag = etag
+	}
+	if newLastModified == "" {
+		newLastModified = lastModified
+	}
+	if db != nil {
+		_ = db.SetFeedCache(source.URL, newETag, newLastModified)
+	}
+
+	feed, err := fp.Parse(bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
