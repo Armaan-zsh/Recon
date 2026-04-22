@@ -18,18 +18,18 @@ import (
 )
 
 type FeedSource struct {
-	Name	string
-	URL	string
+	Name string
+	URL  string
 }
 
 type Article struct {
-	Title		string
-	Link		string
-	Description	string
-	Content		string	// Raw content for extraction
-	Published	time.Time
-	SourceName	string
-	Score		int
+	Title       string
+	Link        string
+	Description string
+	Content     string // Raw content for extraction
+	Published   time.Time
+	SourceName  string
+	Score       int
 }
 
 func (a Article) Hash() string {
@@ -46,15 +46,15 @@ func (a Article) Hash() string {
 }
 
 type FetchResult struct {
-	Articles	[]Article
-	TotalFeeds	int
-	FetchedFeeds	int
-	Duration	time.Duration
+	Articles     []Article
+	TotalFeeds   int
+	FetchedFeeds int
+	Duration     time.Duration
 }
 
 var (
-	advisoryPattern	= regexp.MustCompile(`(?i)^(CVE-\d|ZDI-\d|[A-Z]+-SA-|RHSA-|DSA-|USN-|GHSA-)`)
-	cvePattern	= regexp.MustCompile(`(?i)CVE-\d{4}-\d+`)
+	advisoryPattern = regexp.MustCompile(`(?i)^(CVE-\d|ZDI-\d|[A-Z]+-SA-|RHSA-|DSA-|USN-|GHSA-)`)
+	cvePattern      = regexp.MustCompile(`(?i)CVE-\d{4}-\d+`)
 )
 
 func FetchAll(ctx context.Context, cfg *AppConfig, db *IntelligenceDB) (FetchResult, error) {
@@ -66,9 +66,9 @@ func FetchAll(ctx context.Context, cfg *AppConfig, db *IntelligenceDB) (FetchRes
 
 	extractor := NewExtractor()
 	var (
-		articles	[]Article
-		mu		sync.Mutex
-		fetched		int
+		articles []Article
+		mu       sync.Mutex
+		fetched  int
 	)
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -149,10 +149,10 @@ func FetchAll(ctx context.Context, cfg *AppConfig, db *IntelligenceDB) (FetchRes
 	})
 
 	return FetchResult{
-		Articles:	finalArticles,
-		TotalFeeds:	len(feeds),
-		FetchedFeeds:	fetched,
-		Duration:	time.Since(start),
+		Articles:     finalArticles,
+		TotalFeeds:   len(feeds),
+		FetchedFeeds: fetched,
+		Duration:     time.Since(start),
 	}, nil
 }
 
@@ -195,12 +195,12 @@ func fetchSingleFeed(ctx context.Context, source FeedSource, cfg *AppConfig) ([]
 		}
 
 		articles = append(articles, Article{
-			Title:		item.Title,
-			Link:		item.Link,
-			Description:	desc,
-			Content:	item.Content,
-			Published:	pubDate,
-			SourceName:	source.Name,
+			Title:       item.Title,
+			Link:        item.Link,
+			Description: desc,
+			Content:     item.Content,
+			Published:   pubDate,
+			SourceName:  source.Name,
 		})
 	}
 
@@ -210,6 +210,8 @@ func fetchSingleFeed(ctx context.Context, source FeedSource, cfg *AppConfig) ([]
 func ScoreArticle(a *Article, cfg *AppConfig) {
 	score := 0
 	text := strings.ToLower(a.Title + " " + a.Description)
+	link := strings.ToLower(a.Link)
+	source := strings.ToLower(a.SourceName)
 
 	if cfg != nil {
 		for _, kw := range cfg.Keywords {
@@ -265,9 +267,14 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 
 	lowSignalDomains := []string{"medium.com", "dev.to", "hashnode.com"}
 	for _, d := range lowSignalDomains {
-		if strings.Contains(strings.ToLower(a.Link), d) {
+		if strings.Contains(link, d) {
 			score -= 25
 		}
+	}
+
+	// Threads and social reposts tend to be noisy for this feed.
+	if strings.Contains(link, "reddit.com/") || strings.Contains(link, "redd.it/") || strings.Contains(source, "reddit") {
+		score -= 200
 	}
 
 	fluffKeys := []string{"fresher", "roadmap", "career", "interview", "salary", "beginner guide", "top 10", "how to start", "prompt engineering"}
@@ -281,24 +288,24 @@ func ScoreArticle(a *Article, cfg *AppConfig) {
 }
 
 var HighValueSources = map[string]bool{
-	"Simon Willison":		true,
-	"George Hotz (geohot)":		true,
-	"Julia Evans (jvns)":		true,
-	"Dan Luu":			true,
-	"Filippo Valsorda":		true,
-	"Tavis Ormandy":		true,
-	"Qualys Threat Research":	true,
-	"Rapid7 Blog":			true,
-	"CrowdStrike":			true,
-	"Palo Alto Unit 42":		true,
-	"Mandiant (Google Cloud)":	true,
-	"Cisco Talos":			true,
-	"Krebs on Security":		true,
-	"Phoronix (Linux)":		true,
-	"The Hacker News":		true,
-	"Elastic Security Labs":	true,
-	"Palo Alto Networks":		true,
-	"Check Point Research":		true,
-	"BleepingComputer":		true,
-	"The Register (Security)":	true,
+	"Simon Willison":          true,
+	"George Hotz (geohot)":    true,
+	"Julia Evans (jvns)":      true,
+	"Dan Luu":                 true,
+	"Filippo Valsorda":        true,
+	"Tavis Ormandy":           true,
+	"Qualys Threat Research":  true,
+	"Rapid7 Blog":             true,
+	"CrowdStrike":             true,
+	"Palo Alto Unit 42":       true,
+	"Mandiant (Google Cloud)": true,
+	"Cisco Talos":             true,
+	"Krebs on Security":       true,
+	"Phoronix (Linux)":        true,
+	"The Hacker News":         true,
+	"Elastic Security Labs":   true,
+	"Palo Alto Networks":      true,
+	"Check Point Research":    true,
+	"BleepingComputer":        true,
+	"The Register (Security)": true,
 }

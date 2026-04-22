@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -167,13 +168,16 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]Article, error)
 }
 
 func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
+	currentYearStart := fmt.Sprintf("%04d-01-01 00:00:00", time.Now().Year())
+
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
 		FROM articles
-		WHERE substr(published_at, 1, 19) <= datetime('now', '+36 hours')
+		WHERE substr(published_at, 1, 19) >= ?
+		  AND substr(published_at, 1, 19) <= datetime('now', '+36 hours')
 		ORDER BY (score * 1.0 / power(((strftime('%s','now') - strftime('%s', substr(published_at, 1, 19)))/3600.0) + 2, 1.8)) DESC
 		LIMIT ?
-	`, limit)
+	`, currentYearStart, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -187,8 +191,8 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
 			return nil, err
 		}
 		a.Published = publishedAt
-		
-		ScoreArticle(&a, nil) 
+
+		ScoreArticle(&a, nil)
 		articles = append(articles, a)
 	}
 
@@ -202,14 +206,72 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]Article, error) {
 	sort.Slice(unique, func(i, j int) bool {
 		ageI := time.Since(unique[i].Published).Hours()
 		ageJ := time.Since(unique[j].Published).Hours()
-		
+
 		scoreI := float64(unique[i].Score) / math.Pow(ageI+2, 1.8)
 		scoreJ := float64(unique[j].Score) / math.Pow(ageJ+2, 1.8)
-		
+
 		return scoreI > scoreJ
 	})
 
 	return unique, nil
+}
+
+func (i *IntelligenceDB) PruneLowSignal() error {
+	currentYearStart := fmt.Sprintf("%04d-01-01 00:00:00", time.Now().Year())
+
+	tx, err := i.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query(`SELECT hash, link, source_name, published_at FROM articles`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var staleHashes []string
+	for rows.Next() {
+		var (
+			hash       string
+			link       string
+			sourceName string
+			published  string
+		)
+		if err := rows.Scan(&hash, &link, &sourceName, &published); err != nil {
+			return err
+		}
+
+		linkLower := strings.ToLower(link)
+		sourceLower := strings.ToLower(sourceName)
+		isReddit := strings.Contains(linkLower, "reddit.com/") || strings.Contains(linkLower, "redd.it/") || strings.Contains(sourceLower, "reddit")
+		isStale := strings.TrimSpace(published) < currentYearStart
+		if isReddit || isStale {
+			staleHashes = append(staleHashes, hash)
+		}
+	}
+
+	for _, hash := range staleHashes {
+		if _, err := tx.Exec(`DELETE FROM article_entities WHERE article_hash = ?`, hash); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`DELETE FROM knowledge_history WHERE article_hash = ?`, hash); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`DELETE FROM articles WHERE hash = ?`, hash); err != nil {
+			return err
+		}
+	}
+
+	if _, err := tx.Exec(`
+		DELETE FROM entities
+		WHERE name NOT IN (SELECT DISTINCT entity_name FROM article_entities)
+	`); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (i *IntelligenceDB) GetLastSyncTime() time.Time {

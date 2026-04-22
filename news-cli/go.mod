@@ -1,6 +1,6 @@
 module news-cli
 
-go 1.19
+go 1.25.0
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0
