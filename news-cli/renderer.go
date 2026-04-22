@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -113,6 +114,18 @@ const htmlTemplate = `<!DOCTYPE html>
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-panel); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        @media (max-width: 1100px) {
+            #sidebar {
+                width: 290px;
+                min-width: 290px;
+            }
+            #content {
+                padding: 1.25rem 1.5rem;
+            }
+            #reader-title {
+                font-size: 1.35rem;
+            }
+        }
     </style>
 </head>
 <body>
