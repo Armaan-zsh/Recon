@@ -56,6 +56,13 @@ func GetDaemonCmd(embeddedFeeds []byte) *cobra.Command {
 			}
 			defer db.Close()
 
+			// Clean up pre-2026 and Reddit entries on every startup.
+			if err := db.PruneLowSignal(); err != nil {
+				fmt.Fprintf(os.Stderr, "⚠ prune failed: %v\n", err)
+			} else {
+				fmt.Fprintln(os.Stderr, "nexus pruned: removed stale and reddit entries")
+			}
+
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cancel()
 

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -237,13 +238,16 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]models.Article,
 }
 
 func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) {
+	currentYearStart := fmt.Sprintf("%04d-01-01 00:00:00", time.Now().Year())
+
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
 		FROM articles
-		WHERE published_at >= datetime('now', '-48 hours')
+		WHERE published_at >= ?
+		  AND published_at <= datetime('now', '+36 hours')
 		ORDER BY (score * 1.0 / power(((strftime('%s','now') - strftime('%s', published_at))/3600.0) + 2, 1.8)) DESC
 		LIMIT ?
-	`, limit)
+	`, currentYearStart, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -481,13 +485,57 @@ func (i *IntelligenceDB) GetEntityGraph() ([]models.EntityNode, []models.EntityE
 	return nodes, edges, nil
 }
 
+func (i *IntelligenceDB) PruneLowSignal() error {
+	currentYearStart := fmt.Sprintf("%04d-01-01 00:00:00", time.Now().Year())
+
+	tx, err := i.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query(`SELECT hash, link, source_name, published_at FROM articles`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var staleHashes []string
+	for rows.Next() {
+		var hash, link, sourceName, published string
+		if err := rows.Scan(&hash, &link, &sourceName, &published); err != nil {
+			return err
+		}
+		linkLower := strings.ToLower(link)
+		sourceLower := strings.ToLower(sourceName)
+		isReddit := strings.Contains(linkLower, "reddit.com/") || strings.Contains(linkLower, "redd.it/") || strings.Contains(sourceLower, "reddit")
+		isStale := strings.TrimSpace(published) < currentYearStart
+		if isReddit || isStale {
+			staleHashes = append(staleHashes, hash)
+		}
+	}
+	rows.Close()
+
+	for _, hash := range staleHashes {
+		_, _ = tx.Exec(`DELETE FROM article_entities WHERE article_hash = ?`, hash)
+		_, _ = tx.Exec(`DELETE FROM knowledge_history WHERE article_hash = ?`, hash)
+		_, _ = tx.Exec(`DELETE FROM articles WHERE hash = ?`, hash)
+	}
+
+	_, _ = tx.Exec(`DELETE FROM entities WHERE name NOT IN (SELECT DISTINCT entity_name FROM article_entities)`)
+
+	return tx.Commit()
+}
+
 func (i *IntelligenceDB) GetArchiveDays() ([]ArchiveDay, error) {
+	currentYearStart := fmt.Sprintf("%04d-01-01", time.Now().Year())
 	rows, err := i.db.Query(`
 		SELECT substr(published_at, 1, 10) as d, COUNT(*) as c
 		FROM articles
+		WHERE substr(published_at, 1, 10) >= ?
 		GROUP BY d
 		ORDER BY d DESC
-	`)
+	`, currentYearStart)
 	if err != nil {
 		return nil, err
 	}

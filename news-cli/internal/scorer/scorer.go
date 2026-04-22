@@ -181,6 +181,13 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		}
 	}
 
+	// Reddit and social thread reposts are noisy — hard penalty.
+	link := strings.ToLower(a.Link)
+	source := strings.ToLower(a.SourceName)
+	if strings.Contains(link, "reddit.com/") || strings.Contains(link, "redd.it/") || strings.Contains(source, "reddit") {
+		score -= 200
+	}
+
 	fluffKeys := []string{"fresher", "roadmap", "career", "interview", "salary", "beginner guide", "top 10", "how to start", "prompt engineering"}
 	for _, k := range fluffKeys {
 		if strings.Contains(text, k) {
