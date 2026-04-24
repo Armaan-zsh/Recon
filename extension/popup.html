@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="widget-container">
+    <div id="headline-wrap">
+      <div id="mystery-box">
+        <div id="scan-line"></div>
+        <div id="decrypt-text">DECRYPTING...</div>
+      </div>
+      
+      <div id="headline-card">
+        <div id="headline-meta"></div>
+        <a id="headline-link" href="#" target="_blank">
+          <h1 id="headline-text"></h1>
+        </a>
+      </div>
+    </div>
+
+    <div id="setup-guide" hidden>
+      <div class="offline-icon">!</div>
+      <div class="offline-title">DAEMON OFFLINE</div>
+      <div class="offline-text">Run <code>recon daemon status</code> to check.</div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
