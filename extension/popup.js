@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:9645';
+const API_BASE = 'http://127.0.0.1:9645';
 
 function relTime(isoStr) {
   if (!isoStr) return '';
@@ -33,10 +33,16 @@ async function loadArticle() {
   const setupGuide   = document.getElementById('setup-guide');
 
   try {
-    const latestResp = await fetch(`${API_BASE}/api/latest`, { signal: AbortSignal.timeout(2000) });
-    if (!latestResp.ok) throw new Error('no data');
+    console.log('Recon: Fetching latest articles...');
+    const latestResp = await fetch(`${API_BASE}/api/latest`, { 
+      mode: 'cors',
+      cache: 'no-cache'
+    });
+    
+    if (!latestResp.ok) throw new Error(`HTTP ${latestResp.status}`);
     const articles = await latestResp.json();
-    if (!Array.isArray(articles) || articles.length === 0) throw new Error('empty');
+    
+    if (!Array.isArray(articles) || articles.length === 0) throw new Error('Empty database');
 
     const article = pickRandom(articles);
     
@@ -54,9 +60,10 @@ async function loadArticle() {
     setTimeout(() => {
       mysteryBox.classList.add('hidden');
       headlineCard.classList.add('visible');
-    }, 800);
+    }, 600);
 
   } catch (err) {
+    console.error('Recon Widget Error:', err);
     mysteryBox.classList.add('hidden');
     setupGuide.hidden = false;
   }
