@@ -238,16 +238,14 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]models.Article,
 }
 
 func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) {
-	currentYearStart := fmt.Sprintf("%04d-01-01 00:00:00", time.Now().Year())
-
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary
 		FROM articles
-		WHERE published_at >= ?
+		WHERE published_at >= datetime('now', '-48 hours')
 		  AND published_at <= datetime('now', '+36 hours')
 		ORDER BY (score * 1.0 / power(((strftime('%s','now') - strftime('%s', published_at))/3600.0) + 2, 1.8)) DESC
 		LIMIT ?
-	`, currentYearStart, limit)
+	`, limit)
 	if err != nil {
 		return nil, err
 	}
