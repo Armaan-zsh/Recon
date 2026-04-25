@@ -20,6 +20,11 @@ type articleView struct {
 	SourceName  string
 	Score       int
 	When        string
+	IoCs        []string
+	HasIoCs     bool
+	IsTechStack bool
+	PatchLink   string
+	HasPatch    bool
 }
 
 type archiveDayView struct {
@@ -217,6 +222,43 @@ a { color: inherit; text-decoration: none; }
   background: rgba(245, 158, 11, 0.14);
   color: #fcd34d;
 }
+.ioc-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.14);
+  color: #22d3ee;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+}
+.tech-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+}
+.patch-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  text-decoration: none;
+}
+.patch-tag:hover {
+  background: rgba(16, 185, 129, 0.24);
+}
 .card h3 {
   font-size: 1rem;
   font-weight: 500;
@@ -348,7 +390,7 @@ const indexBody = `
         {{if .Articles}}
           {{range .Articles}}
             <a class="card" href="{{.Link}}" target="_blank" rel="noreferrer">
-              <div class="meta"><span class="source">{{.SourceName}}</span><span class="score">{{.Score}}</span> · {{.When}}</div>
+              <div class="meta"><span class="source">{{.SourceName}}</span><span class="score">{{.Score}}</span>{{if .IsTechStack}}<span class="tech-tag">IN STACK</span>{{end}}{{if .HasIoCs}}<span class="ioc-tag">IoCs DETECTED</span>{{end}}{{if .HasPatch}}<a class="patch-tag" href="{{.PatchLink}}" target="_blank" onclick="event.stopPropagation()">VIEW PATCH</a>{{end}} · {{.When}}</div>
               <h3>{{.Title}}</h3>
               <div class="desc">{{.Description}}</div>
             </a>
@@ -400,7 +442,7 @@ const archiveDayBody = `
         {{if .Articles}}
           {{range .Articles}}
             <a class="card" href="{{.Link}}" target="_blank" rel="noreferrer">
-              <div class="meta"><span class="source">{{.SourceName}}</span><span class="score">{{.Score}}</span> · {{.When}}</div>
+              <div class="meta"><span class="source">{{.SourceName}}</span><span class="score">{{.Score}}</span>{{if .IsTechStack}}<span class="tech-tag">IN STACK</span>{{end}}{{if .HasIoCs}}<span class="ioc-tag">IoCs DETECTED</span>{{end}}{{if .HasPatch}}<a class="patch-tag" href="{{.PatchLink}}" target="_blank" onclick="event.stopPropagation()">VIEW PATCH</a>{{end}} · {{.When}}</div>
               <h3>{{.Title}}</h3>
               <div class="desc">{{.Description}}</div>
             </a>
@@ -976,6 +1018,11 @@ func toArticleViews(arts []models.Article, now time.Time) []articleView {
 			SourceName:  a.SourceName,
 			Score:       a.Score,
 			When:        relTime(a.Published.UTC(), now),
+			IoCs:        a.IoCs,
+			HasIoCs:     len(a.IoCs) > 0,
+			IsTechStack: a.Score >= 200,
+			PatchLink:   a.PatchLink,
+			HasPatch:    a.PatchLink != "",
 		})
 	}
 	return out

@@ -15,6 +15,8 @@ type Article struct {
 	Published   time.Time `json:"Published"`
 	SourceName  string    `json:"SourceName"`
 	Score       int       `json:"Score"`
+	IoCs        []string  `json:"IoCs,omitempty"`
+	PatchLink   string    `json:"PatchLink,omitempty"`
 }
 
 func (a Article) Hash() string {

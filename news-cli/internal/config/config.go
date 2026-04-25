@@ -17,6 +17,7 @@ type AppConfig struct {
 	ScheduleTime  string   `json:"schedule_time" yaml:"schedule_time"`
 	Categories    []string `json:"categories" yaml:"categories"`
 	Keywords      []string `json:"keywords" yaml:"keywords"`
+	TechStack     []string `json:"tech_stack" yaml:"tech_stack"`
 	SetupComplete bool     `json:"setup_complete" yaml:"setup_complete"`
 	LastRun       string   `json:"last_run,omitempty" yaml:"last_run,omitempty"`
 	TorProxy      string   `json:"tor_proxy,omitempty" yaml:"tor_proxy,omitempty"`

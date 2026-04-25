@@ -66,3 +66,39 @@ func (e *EntityExtractor) ExtractEntities(a models.Article) []string {
 	}
 	return entities
 }
+
+func (e *EntityExtractor) ExtractIoCs(a models.Article) []string {
+	found := make(map[string]bool)
+	text := a.Description + " " + a.Content // Usually IoCs are in the body
+	
+	ips := e.ipRegex.FindAllString(text, -1)
+	for _, ip := range ips {
+		// Ignore common local IPs or broadcast
+		if ip != "127.0.0.1" && ip != "0.0.0.0" && ip != "255.255.255.255" {
+			found[ip] = true
+		}
+	}
+	
+	// Hashes: MD5, SHA1, SHA256
+	hashRegex := regexp.MustCompile(`(?i)\b([a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b`)
+	hashes := hashRegex.FindAllString(text, -1)
+	for _, h := range hashes {
+		found[strings.ToLower(h)] = true
+	}
+
+	iocs := make([]string, 0, len(found))
+	for k := range found {
+		iocs = append(iocs, k)
+	}
+	return iocs
+}
+
+func (e *EntityExtractor) ExtractPatchLink(a models.Article) string {
+	text := a.Description + " " + a.Content
+	
+	// Regex for GitHub/GitLab commit links
+	patchRegex := regexp.MustCompile(`(?i)https?://(github|gitlab)\.com/[^/]+/[^/]+/(commit|pull)/[a-f0-9]+`)
+	link := patchRegex.FindString(text)
+	
+	return link
+}

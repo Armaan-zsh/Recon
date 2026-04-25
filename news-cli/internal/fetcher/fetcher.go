@@ -31,7 +31,7 @@ import (
 
 var dateRegex = regexp.MustCompile(`/(20\d{2})/(0[1-9]|1[0-2])/`)
 
-func FetchAll(ctx context.Context, keywords []string, torProxy string, db *database.IntelligenceDB, feedData []byte) (models.FetchResult, error) {
+func FetchAll(ctx context.Context, keywords []string, techStack []string, torProxy string, db *database.IntelligenceDB, feedData []byte) (models.FetchResult, error) {
 	start := time.Now()
 	feeds, err := LoadFeeds(feedData)
 	if err != nil {
@@ -62,11 +62,13 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 
 			validArticles := []models.Article{}
 			for _, a := range feedArticles {
-				scorer.ScoreArticle(&a, keywords)
+				scorer.ScoreArticle(&a, keywords, techStack)
 				if a.Score > 5 {
 					validArticles = append(validArticles, a)
 
 					if db != nil {
+						a.IoCs = ext.ExtractIoCs(a)
+						a.PatchLink = ext.ExtractPatchLink(a)
 						ents := ext.ExtractEntities(a)
 						_ = db.SaveArticle(a, ents)
 					}
@@ -84,10 +86,12 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 		dragnetArticles := aggregators.FetchDragnetFeeds(ctx)
 		var validArticles []models.Article
 		for _, a := range dragnetArticles {
-			scorer.ScoreArticle(&a, keywords)
+			scorer.ScoreArticle(&a, keywords, techStack)
 			validArticles = append(validArticles, a)
 
 			if db != nil {
+				a.IoCs = ext.ExtractIoCs(a)
+				a.PatchLink = ext.ExtractPatchLink(a)
 				ents := ext.ExtractEntities(a)
 				_ = db.SaveArticle(a, ents)
 			}
@@ -102,7 +106,7 @@ func FetchAll(ctx context.Context, keywords []string, torProxy string, db *datab
 		configDir, _ := os.UserConfigDir()
 		robinPath := filepath.Join(configDir, "recon", "robin_intel.json")
 		if _, err := os.Stat(robinPath); err == nil {
-			robinArticles, err := IngestRobinIntel(robinPath)
+			robinArticles, err := IngestRobinIntel(robinPath, keywords, techStack)
 			if err == nil {
 				mu.Lock()
 				for _, a := range robinArticles {

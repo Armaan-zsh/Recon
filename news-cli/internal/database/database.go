@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math"
 	"news-cli/internal/clusterer"
@@ -58,7 +59,9 @@ func InitDB() (*IntelligenceDB, error) {
 		score INTEGER,
 		summary TEXT,
 		cluster_id TEXT,
-		seen BOOLEAN DEFAULT 0
+		seen BOOLEAN DEFAULT 0,
+		iocs TEXT,
+		patch_link TEXT
 	);
 
 	CREATE TABLE IF NOT EXISTS entities (
@@ -99,6 +102,10 @@ func InitDB() (*IntelligenceDB, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
+
+	// Migrate existing DBs
+	_, _ = db.Exec("ALTER TABLE articles ADD COLUMN iocs TEXT;")
+	_, _ = db.Exec("ALTER TABLE articles ADD COLUMN patch_link TEXT;")
 
 	var ftsVersion string
 	_ = db.QueryRow("SELECT value FROM system_state WHERE key = 'fts_version'").Scan(&ftsVersion)
@@ -174,13 +181,16 @@ func (i *IntelligenceDB) SaveArticle(art models.Article, entities []string) erro
 	}
 	defer tx.Rollback()
 
+	iocsJSON, _ := json.Marshal(art.IoCs)
 	_, err = tx.Exec(`
-		INSERT INTO articles (hash, title, link, published_at, source_name, score, summary)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO articles (hash, title, link, published_at, source_name, score, summary, iocs, patch_link)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(hash) DO UPDATE SET
 			score = excluded.score,
-			summary = excluded.summary;
-	`, art.Hash(), art.Title, art.Link, art.Published.UTC().Format("2006-01-02 15:04:05"), art.SourceName, art.Score, art.Description)
+			summary = excluded.summary,
+			iocs = excluded.iocs,
+			patch_link = excluded.patch_link;
+	`, art.Hash(), art.Title, art.Link, art.Published.UTC().Format("2006-01-02 15:04:05"), art.SourceName, art.Score, art.Description, string(iocsJSON), art.PatchLink)
 	if err != nil {
 		return err
 	}
@@ -213,7 +223,7 @@ func (i *IntelligenceDB) GetArticleEntities(hash string) ([]string, error) {
 
 func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]models.Article, error) {
 	rows, err := i.db.Query(`
-		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
+		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary, a.iocs, a.patch_link
 		FROM articles a
 		JOIN article_entities ae ON a.hash = ae.article_hash
 		WHERE ae.entity_name = ?
@@ -228,10 +238,16 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]models.Article,
 	for rows.Next() {
 		var a models.Article
 		var publishedAt time.Time
-		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
+		var iocsData sql.NullString
+		var patchLink sql.NullString
+		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description, &iocsData, &patchLink); err != nil {
 			return nil, err
 		}
 		a.Published = publishedAt
+		if iocsData.Valid && iocsData.String != "" {
+			json.Unmarshal([]byte(iocsData.String), &a.IoCs)
+		}
+		a.PatchLink = patchLink.String
 		articles = append(articles, a)
 	}
 	return articles, nil
@@ -239,7 +255,7 @@ func (i *IntelligenceDB) GetEntityTimeline(entityName string) ([]models.Article,
 
 func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) {
 	rows, err := i.db.Query(`
-		SELECT title, link, published_at, source_name, score, summary
+		SELECT title, link, published_at, source_name, score, summary, iocs, patch_link
 		FROM articles
 		WHERE published_at >= datetime('now', '-48 hours')
 		  AND published_at <= datetime('now', '+36 hours')
@@ -255,10 +271,16 @@ func (i *IntelligenceDB) GetRecentArticles(limit int) ([]models.Article, error) 
 	for rows.Next() {
 		var a models.Article
 		var publishedAt time.Time
-		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
+		var iocsData sql.NullString
+		var patchLink sql.NullString
+		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description, &iocsData, &patchLink); err != nil {
 			return nil, err
 		}
 		a.Published = publishedAt
+		if iocsData.Valid && iocsData.String != "" {
+			json.Unmarshal([]byte(iocsData.String), &a.IoCs)
+		}
+		a.PatchLink = patchLink.String
 		articles = append(articles, a)
 	}
 
@@ -303,7 +325,7 @@ func (i *IntelligenceDB) SetFeedCache(url string, etag string, lastModified stri
 
 func (i *IntelligenceDB) SearchArticles(query string, afterDate time.Time, minScore int) ([]models.Article, error) {
 	rows, err := i.db.Query(`
-		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary
+		SELECT a.title, a.link, a.published_at, a.source_name, a.score, a.summary, a.iocs, a.patch_link
 		FROM articles a
 		JOIN article_search s ON a.hash = s.hash
 		WHERE article_search MATCH ?
@@ -320,10 +342,16 @@ func (i *IntelligenceDB) SearchArticles(query string, afterDate time.Time, minSc
 	for rows.Next() {
 		var a models.Article
 		var publishedAt time.Time
-		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
+		var iocsData sql.NullString
+		var patchLink sql.NullString
+		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description, &iocsData, &patchLink); err != nil {
 			return nil, err
 		}
 		a.Published = publishedAt
+		if iocsData.Valid && iocsData.String != "" {
+			json.Unmarshal([]byte(iocsData.String), &a.IoCs)
+		}
+		a.PatchLink = patchLink.String
 		articles = append(articles, a)
 	}
 	return articles, nil
@@ -404,7 +432,7 @@ func (i *IntelligenceDB) GetTrendingEntities(hours int, limit int) ([]models.Ent
 
 func (i *IntelligenceDB) GetArticlesByDate(date string, limit int) ([]models.Article, error) {
 	rows, err := i.db.Query(`
-		SELECT title, link, published_at, source_name, score, summary
+		SELECT title, link, published_at, source_name, score, summary, iocs, patch_link
 		FROM articles
 		WHERE substr(published_at, 1, 10) = ?
 		ORDER BY score DESC, published_at DESC
@@ -419,10 +447,16 @@ func (i *IntelligenceDB) GetArticlesByDate(date string, limit int) ([]models.Art
 	for rows.Next() {
 		var a models.Article
 		var publishedAt time.Time
-		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description); err != nil {
+		var iocsData sql.NullString
+		var patchLink sql.NullString
+		if err := rows.Scan(&a.Title, &a.Link, &publishedAt, &a.SourceName, &a.Score, &a.Description, &iocsData, &patchLink); err != nil {
 			return nil, err
 		}
 		a.Published = publishedAt
+		if iocsData.Valid && iocsData.String != "" {
+			json.Unmarshal([]byte(iocsData.String), &a.IoCs)
+		}
+		a.PatchLink = patchLink.String
 		articles = append(articles, a)
 	}
 	return articles, nil

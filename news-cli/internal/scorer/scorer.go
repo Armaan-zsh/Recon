@@ -69,7 +69,7 @@ var LowSignalSources = map[string]int{
 	"defend.network":                            90,
 }
 
-func ScoreArticle(a *models.Article, keywords []string) {
+func ScoreArticle(a *models.Article, keywords []string, techStack []string) {
 	score := 0
 	text := strings.ToLower(a.Title + " " + a.Description)
 	keywordHits := 0
@@ -80,6 +80,17 @@ func ScoreArticle(a *models.Article, keywords []string) {
 		if strings.Contains(text, strings.ToLower(kw)) {
 			score += 3
 			keywordHits++
+		}
+	}
+
+	// Blast Radius: Massive boost for tech stack matches to ensure user-friendly relevance
+	for _, tech := range techStack {
+		if tech == "" {
+			continue
+		}
+		if strings.Contains(text, strings.ToLower(tech)) {
+			score += 200 // Huge boost to bypass generic scoring thresholds
+			signalHits++
 		}
 	}
 
@@ -226,6 +237,19 @@ func ScoreArticle(a *models.Article, keywords []string) {
 
 	if keywordHits == 0 && signalHits == 0 {
 		score -= 45
+	}
+
+	// Strict penalty for generic aggregators: Hacker News Frontpage MUST have a security signal
+	if source == "hacker news frontpage" && signalHits == 0 {
+		score -= 150
+	}
+
+	// Explicit off-topic filters
+	offTopicKeys := []string{"squid blogging", "squid survived", "geometry nodes", "general examination"}
+	for _, k := range offTopicKeys {
+		if strings.Contains(text, k) {
+			score -= 150
+		}
 	}
 
 	a.Score = score

@@ -38,10 +38,12 @@ func GetDaemonCmd(embeddedFeeds []byte) *cobra.Command {
 			}
 
 			var keywords []string
+			var techStack []string
 			var torProxy string
 			if cfg != nil {
 				keywords = config.KeywordsForCategories(cfg.Categories)
 				keywords = append(keywords, cfg.Keywords...)
+				techStack = cfg.TechStack
 				torProxy = cfg.TorProxy
 			}
 
@@ -81,7 +83,7 @@ func GetDaemonCmd(embeddedFeeds []byte) *cobra.Command {
 			for {
 				cycle++
 				start := time.Now()
-				res, err := fetcher.FetchAll(ctx, keywords, torProxy, db, feedData)
+				res, err := fetcher.FetchAll(ctx, keywords, techStack, torProxy, db, feedData)
 				if err == nil {
 					_ = db.SetLastSyncTime(time.Now())
 				}

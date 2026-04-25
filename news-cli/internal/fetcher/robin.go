@@ -23,7 +23,7 @@ type RobinItem struct {
 	Severity string   `json:"severity"`
 }
 
-func IngestRobinIntel(filePath string) ([]models.Article, error) {
+func IngestRobinIntel(filePath string, keywords []string, techStack []string) ([]models.Article, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read robin intel: %w", err)
@@ -50,8 +50,8 @@ func IngestRobinIntel(filePath string) ([]models.Article, error) {
 			Score:       score,
 		}
 
-		// Re-score with CVE patterns if applicable
-		scorer.ScoreArticle(&art, nil)
+		// Re-score with CVE patterns and tech stack if applicable
+		scorer.ScoreArticle(&art, keywords, techStack)
 		articles = append(articles, art)
 	}
 

@@ -42,6 +42,7 @@ var (
 type tuiModel struct {
 	articles     []models.Article
 	keywords     []string
+	techStack    []string
 	torProxy     string
 	feedData     []byte
 	db           *database.IntelligenceDB
@@ -64,7 +65,7 @@ type syncCompleteMsg struct {
 	newCount int
 }
 
-func performBackgroundSync(db *database.IntelligenceDB, keywords []string, torProxy string, feedData []byte, currentHashes map[string]bool) tea.Cmd {
+func performBackgroundSync(db *database.IntelligenceDB, keywords []string, techStack []string, torProxy string, feedData []byte, currentHashes map[string]bool) tea.Cmd {
 	return func() tea.Msg {
 		if db == nil {
 			return syncCompleteMsg{}
@@ -75,7 +76,7 @@ func performBackgroundSync(db *database.IntelligenceDB, keywords []string, torPr
 			return syncCompleteMsg{}
 		}
 
-		res, err := fetcher.FetchAll(context.Background(), keywords, torProxy, db, feedData)
+		res, err := fetcher.FetchAll(context.Background(), keywords, techStack, torProxy, db, feedData)
 		if err != nil || len(res.Articles) == 0 {
 			return syncCompleteMsg{}
 		}
@@ -93,7 +94,7 @@ func performBackgroundSync(db *database.IntelligenceDB, keywords []string, torPr
 	}
 }
 
-func RunTUI(articles []models.Article, keywords []string, torProxy string, feedData []byte) error {
+func RunTUI(articles []models.Article, keywords []string, techStack []string, torProxy string, feedData []byte) error {
 	db, _ := database.InitDB()
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -107,6 +108,7 @@ func RunTUI(articles []models.Article, keywords []string, torProxy string, feedD
 	m := tuiModel{
 		articles:     articles,
 		keywords:     keywords,
+		techStack:    techStack,
 		torProxy:     torProxy,
 		feedData:     feedData,
 		db:           db,
@@ -129,7 +131,7 @@ func (m tuiModel) Init() tea.Cmd {
 	for _, a := range m.articles {
 		currentHashes[a.Hash()] = true
 	}
-	return tea.Batch(m.spinner.Tick, performBackgroundSync(m.db, m.keywords, m.torProxy, m.feedData, currentHashes))
+	return tea.Batch(m.spinner.Tick, performBackgroundSync(m.db, m.keywords, m.techStack, m.torProxy, m.feedData, currentHashes))
 }
 
 func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
