@@ -210,7 +210,14 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "o":
 			if m.cursor < len(m.articles) {
-				_ = openInBrowser(m.articles[m.cursor].Link)
+				art := m.articles[m.cursor]
+				if models.IsOnionURL(art.Link) && strings.TrimSpace(m.torProxy) == "" {
+					m.syncStatus = "Onion link blocked: configure tor_proxy to open safely"
+					return m, nil
+				}
+				if err := openInBrowser(art.Link); err != nil {
+					m.syncStatus = "Failed to open link in browser"
+				}
 			}
 		}
 	}
@@ -367,6 +374,7 @@ func (m tuiModel) renderReader(width int) string {
 		readerTextStyle.Width(width-6).Render(textutil.PlainText(art.Description)),
 		"",
 		metaStyle.Render("Host: "+host),
+		metaStyle.Render("Network: "+networkLabel(art.Link)),
 		metaStyle.Render("Link: "+textutil.Truncate(art.Link, max(24, width-12))),
 		"",
 		keyStyle.Render("[o] open")+metaStyle.Render(" in browser   ")+keyStyle.Render("[x] nexus")+metaStyle.Render(" entity timeline   ")+keyStyle.Render("[q] quit"),
@@ -446,6 +454,13 @@ func openInBrowser(url string) error {
 		args = []string{url}
 	}
 	return exec.Command(cmd, args...).Start()
+}
+
+func networkLabel(link string) string {
+	if models.IsOnionURL(link) {
+		return "ONION (Tor required)"
+	}
+	return "CLEARNET"
 }
 
 func min(a, b int) int {

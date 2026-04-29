@@ -124,7 +124,7 @@ func FetchAll(ctx context.Context, keywords []string, techStack []string, torPro
 		configDir, _ := os.UserConfigDir()
 		robinPath := filepath.Join(configDir, "recon", "robin_intel.json")
 		if _, err := os.Stat(robinPath); err == nil {
-			robinArticles, err := IngestRobinIntel(robinPath, keywords, techStack)
+			robinArticles, err := IngestRobinIntel(robinPath, keywords, techStack, torProxy != "")
 			if err == nil {
 				mu.Lock()
 				for _, a := range robinArticles {

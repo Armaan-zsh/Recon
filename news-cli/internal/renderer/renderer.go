@@ -306,6 +306,11 @@ func ServeAndOpen(htmlContent string) {
 			w.Write([]byte(`{"error":"no url provided"}`))
 			return
 		}
+		if models.IsOnionURL(articleURL) {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"error":"Onion content is intel-only in browser mode. Open via a Tor-configured environment."}`))
+			return
+		}
 
 		client := &http.Client{Timeout: 15 * time.Second}
 		req, _ := http.NewRequest("GET", articleURL, nil)

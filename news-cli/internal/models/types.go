@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -30,6 +31,14 @@ func (a Article) Hash() string {
 	h := sha256.New()
 	h.Write([]byte(base))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func IsOnionURL(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Hostname() == "" {
+		return false
+	}
+	return strings.HasSuffix(strings.ToLower(u.Hostname()), ".onion")
 }
 
 type FeedSource struct {

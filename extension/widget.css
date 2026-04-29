@@ -1,0 +1,97 @@
+#recon-floating-widget {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  width: min(360px, calc(100vw - 24px));
+  z-index: 2147483646;
+  background: rgba(16, 18, 25, 0.93);
+  color: #e8edf6;
+  border: 1px solid rgba(100, 130, 255, 0.28);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  backdrop-filter: blur(8px);
+  user-select: none;
+}
+
+#recon-floating-widget.recon-hidden {
+  display: none;
+}
+
+.recon-fw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 4px 10px;
+  cursor: move;
+}
+
+#recon-floating-widget.recon-locked .recon-fw-header {
+  cursor: default;
+}
+
+.recon-fw-tag {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #8fb7ff;
+  text-transform: uppercase;
+}
+
+.recon-fw-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recon-fw-btn {
+  border: 1px solid rgba(144, 166, 214, 0.45);
+  background: rgba(24, 29, 44, 0.85);
+  color: #b8c8eb;
+  border-radius: 999px;
+  font-size: 10px;
+  padding: 1px 7px;
+  cursor: pointer;
+}
+
+.recon-fw-btn.recon-active {
+  background: #8fb7ff;
+  color: #101828;
+  border-color: #8fb7ff;
+}
+
+.recon-fw-content {
+  display: block;
+  padding: 0 10px 10px 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.recon-fw-meta {
+  font-size: 10px;
+  color: #9ca8c2;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.recon-fw-title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.28;
+  font-weight: 500;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recon-fw-title:hover {
+  color: #8fb7ff;
+}
+
+.recon-fw-state {
+  padding: 8px 10px 10px 10px;
+  font-size: 11px;
+  color: #aab7d4;
+}

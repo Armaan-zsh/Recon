@@ -3,15 +3,30 @@
   "name": "Recon",
   "version": "1.2.0",
   "description": "High-signal intelligence. A random headline every new tab.",
-  "chrome_url_overrides": {
-    "newtab": "newtab.html"
-  },
   "action": {
     "default_popup": "popup.html"
   },
+  "permissions": [
+    "storage"
+  ],
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "widget.js"
+      ],
+      "css": [
+        "widget.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "host_permissions": [
     "http://localhost:9645/*",
     "http://127.0.0.1:9645/*"
