@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"news-cli/internal/database"
+	"news-cli/internal/models"
+	"news-cli/internal/scorer"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -21,12 +24,26 @@ func NewServer(db *database.IntelligenceDB) *Server {
 	s := &Server{db: db, mux: http.NewServeMux()}
 
 	s.mux.HandleFunc("/api/latest", s.handleLatest)
+	s.mux.HandleFunc("/api/latest/lanes", s.handleLatestLanes)
 	s.mux.HandleFunc("/api/headline", s.handleHeadline)
 	s.mux.HandleFunc("/api/archive/", s.handleArchive)
 	s.mux.HandleFunc("/api/entities/graph", s.handleEntityGraph)
 	s.mux.HandleFunc("/api/entities/trending", s.handleTrending)
 
 	return s
+}
+
+type laneArticle struct {
+	models.Article
+	GeneralScore int      `json:"general_score"`
+	ExpertScore  int      `json:"expert_score"`
+	Why          []string `json:"why"`
+}
+
+type lanePayload struct {
+	GeneratedAt string        `json:"generated_at"`
+	General     []laneArticle `json:"general"`
+	Expert      []laneArticle `json:"expert"`
 }
 
 func (s *Server) Listen(ctx context.Context, port int) error {
@@ -77,6 +94,62 @@ func (s *Server) handleLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.writeJSON(w, arts)
+}
+
+func (s *Server) handleLatestLanes(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	arts, err := s.db.GetRecentArticles(60)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	general := make([]laneArticle, 0, len(arts))
+	expert := make([]laneArticle, 0, len(arts))
+	for _, art := range arts {
+		signals := scorer.ScoreLanes(art)
+		general = append(general, laneArticle{
+			Article:      art,
+			GeneralScore: signals.GeneralScore,
+			ExpertScore:  signals.ExpertScore,
+			Why:          signals.GeneralWhy,
+		})
+		expert = append(expert, laneArticle{
+			Article:      art,
+			GeneralScore: signals.GeneralScore,
+			ExpertScore:  signals.ExpertScore,
+			Why:          signals.ExpertWhy,
+		})
+	}
+
+	sort.Slice(general, func(i, j int) bool {
+		if general[i].GeneralScore == general[j].GeneralScore {
+			return general[i].Published.After(general[j].Published)
+		}
+		return general[i].GeneralScore > general[j].GeneralScore
+	})
+	sort.Slice(expert, func(i, j int) bool {
+		if expert[i].ExpertScore == expert[j].ExpertScore {
+			return expert[i].Published.After(expert[j].Published)
+		}
+		return expert[i].ExpertScore > expert[j].ExpertScore
+	})
+
+	if len(general) > 20 {
+		general = general[:20]
+	}
+	if len(expert) > 20 {
+		expert = expert[:20]
+	}
+
+	s.writeJSON(w, lanePayload{
+		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		General:     general,
+		Expert:      expert,
+	})
 }
 
 func (s *Server) handleHeadline(w http.ResponseWriter, r *http.Request) {

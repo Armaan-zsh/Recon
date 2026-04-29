@@ -15,6 +15,7 @@ const appName = "recon"
 type AppConfig struct {
 	Timezone      string   `json:"timezone" yaml:"timezone"`
 	ScheduleTime  string   `json:"schedule_time" yaml:"schedule_time"`
+	RefreshIntervalMinutes int `json:"refresh_interval_minutes,omitempty" yaml:"refresh_interval_minutes,omitempty"`
 	Categories    []string `json:"categories" yaml:"categories"`
 	Keywords      []string `json:"keywords" yaml:"keywords"`
 	TechStack     []string `json:"tech_stack" yaml:"tech_stack"`
@@ -100,6 +101,7 @@ var AllCategories = []CategoryDef{
 func DefaultConfig() *AppConfig {
 	return &AppConfig{
 		SetupComplete: false,
+		RefreshIntervalMinutes: 30,
 		Scoring: ScoringConfig{
 			MinScoreThreshold: 5,
 			WorkerLimit:       500,
@@ -174,6 +176,9 @@ func LoadConfig() (*AppConfig, error) {
 }
 
 func mergeConfig(cfg, defaults *AppConfig) {
+	if cfg.RefreshIntervalMinutes == 0 {
+		cfg.RefreshIntervalMinutes = defaults.RefreshIntervalMinutes
+	}
 	if cfg.Scoring.WorkerLimit == 0 {
 		cfg.Scoring.WorkerLimit = defaults.Scoring.WorkerLimit
 	}

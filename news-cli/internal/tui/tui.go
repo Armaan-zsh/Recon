@@ -44,6 +44,7 @@ type tuiModel struct {
 	keywords     []string
 	techStack    []string
 	torProxy     string
+	refreshInterval time.Duration
 	feedData     []byte
 	db           *database.IntelligenceDB
 	cursor       int
@@ -65,14 +66,14 @@ type syncCompleteMsg struct {
 	newCount int
 }
 
-func performBackgroundSync(db *database.IntelligenceDB, keywords []string, techStack []string, torProxy string, feedData []byte, currentHashes map[string]bool) tea.Cmd {
+func performBackgroundSync(db *database.IntelligenceDB, keywords []string, techStack []string, torProxy string, feedData []byte, refreshInterval time.Duration, currentHashes map[string]bool) tea.Cmd {
 	return func() tea.Msg {
 		if db == nil {
 			return syncCompleteMsg{}
 		}
 
 		lastSync := db.GetLastSyncTime()
-		if time.Since(lastSync) < 15*time.Minute {
+		if time.Since(lastSync) < refreshInterval {
 			return syncCompleteMsg{}
 		}
 
@@ -94,7 +95,7 @@ func performBackgroundSync(db *database.IntelligenceDB, keywords []string, techS
 	}
 }
 
-func RunTUI(articles []models.Article, keywords []string, techStack []string, torProxy string, feedData []byte) error {
+func RunTUI(articles []models.Article, keywords []string, techStack []string, torProxy string, feedData []byte, refreshInterval time.Duration) error {
 	db, _ := database.InitDB()
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -110,6 +111,7 @@ func RunTUI(articles []models.Article, keywords []string, techStack []string, to
 		keywords:     keywords,
 		techStack:    techStack,
 		torProxy:     torProxy,
+		refreshInterval: refreshInterval,
 		feedData:     feedData,
 		db:           db,
 		spinner:      s,
@@ -131,7 +133,7 @@ func (m tuiModel) Init() tea.Cmd {
 	for _, a := range m.articles {
 		currentHashes[a.Hash()] = true
 	}
-	return tea.Batch(m.spinner.Tick, performBackgroundSync(m.db, m.keywords, m.techStack, m.torProxy, m.feedData, currentHashes))
+	return tea.Batch(m.spinner.Tick, performBackgroundSync(m.db, m.keywords, m.techStack, m.torProxy, m.feedData, m.refreshInterval, currentHashes))
 }
 
 func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

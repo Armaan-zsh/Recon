@@ -528,7 +528,7 @@ func (i *IntelligenceDB) PruneLowSignal() error {
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.Query(`SELECT hash, link, source_name, published_at FROM articles`)
+	rows, err := tx.Query(`SELECT hash, link, source_name, published_at, score FROM articles`)
 	if err != nil {
 		return err
 	}
@@ -537,14 +537,16 @@ func (i *IntelligenceDB) PruneLowSignal() error {
 	var staleHashes []string
 	for rows.Next() {
 		var hash, link, sourceName, published string
-		if err := rows.Scan(&hash, &link, &sourceName, &published); err != nil {
+		var score int
+		if err := rows.Scan(&hash, &link, &sourceName, &published, &score); err != nil {
 			return err
 		}
 		linkLower := strings.ToLower(link)
 		sourceLower := strings.ToLower(sourceName)
 		isReddit := strings.Contains(linkLower, "reddit.com/") || strings.Contains(linkLower, "redd.it/") || strings.Contains(sourceLower, "reddit")
 		isStale := strings.TrimSpace(published) < currentYearStart
-		if isReddit || isStale {
+		isLowScore := score <= 5
+		if isReddit || isStale || isLowScore {
 			staleHashes = append(staleHashes, hash)
 		}
 	}

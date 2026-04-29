@@ -32,38 +32,40 @@
 
     body {
       background: var(--bg);
-      display: flex;
-      justify-content: center;
-      align-items: center;
       height: 100vh;
       font-family: 'Inter', sans-serif;
       overflow: hidden;
+      margin: 0;
     }
 
-    /* The Widget */
+    /* Compact corner widget */
     .widget-box {
-      width: 380px;
-      min-height: 140px;
+      width: min(360px, calc(100vw - 24px));
+      min-height: 96px;
       background: var(--widget-bg);
       border: 1px solid var(--widget-border);
-      border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
-      padding: 20px;
-      position: relative;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      padding: 10px 12px;
+      position: fixed;
+      top: 12px;
+      right: 12px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
+      gap: 6px;
     }
 
     #mystery-box {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      padding: 10px 0;
     }
 
     #decrypt-text {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       letter-spacing: 0.1em;
       color: var(--text-dim);
@@ -71,7 +73,7 @@
     }
 
     #scan-line {
-      width: 100px;
+      width: 80px;
       height: 2px;
       background: var(--accent);
       border-radius: 2px;
@@ -92,9 +94,9 @@
     }
 
     #headline-meta {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-dim);
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       text-transform: uppercase;
       font-weight: 600;
       letter-spacing: 0.05em;
@@ -102,6 +104,36 @@
 
     .meta-source { color: var(--accent); }
     .meta-sep { margin: 0 6px; opacity: 0.5; }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .lane-toggle {
+      display: inline-flex;
+      border: 1px solid var(--widget-border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .lane-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      cursor: pointer;
+    }
+
+    .lane-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
 
     #headline-link {
       text-decoration: none;
@@ -112,9 +144,13 @@
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      font-size: 20px;
-      line-height: 1.3;
+      font-size: 16px;
+      line-height: 1.25;
       transition: color 0.2s;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     #headline-link:hover #headline-text {
@@ -123,7 +159,7 @@
 
     #setup-guide {
       text-align: center;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-dim);
     }
 
@@ -137,7 +173,7 @@
 </head>
 <body>
 
-  <!-- Just a small floating widget box on a blank page -->
+  <!-- Small floating widget; rest of tab stays clean -->
   <div class="widget-box">
     <div id="mystery-box">
       <div id="decrypt-text">FETCHING INTEL...</div>
@@ -145,14 +181,20 @@
     </div>
     
     <div id="headline-card">
-      <div id="headline-meta"></div>
+      <div class="meta-row">
+        <div id="headline-meta"></div>
+        <div class="lane-toggle" aria-label="Select lane">
+          <button id="lane-general" class="lane-btn" type="button">General</button>
+          <button id="lane-expert" class="lane-btn" type="button">Expert</button>
+        </div>
+      </div>
       <a id="headline-link" href="#" target="_blank">
         <h1 id="headline-text"></h1>
       </a>
     </div>
 
     <div id="setup-guide" hidden>
-      Daemon Offline
+      Recon daemon offline
     </div>
   </div>
 

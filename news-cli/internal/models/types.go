@@ -41,6 +41,7 @@ type FetchResult struct {
 	Articles     []Article
 	TotalFeeds   int
 	FetchedFeeds int
+	FailedFeeds  int
 	Duration     time.Duration
 }
 

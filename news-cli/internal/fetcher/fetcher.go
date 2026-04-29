@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"news-cli/internal/aggregators"
+	"news-cli/internal/config"
 	"news-cli/internal/clusterer"
 	"news-cli/internal/database"
 	"news-cli/internal/extractor"
@@ -46,13 +47,28 @@ func FetchAll(ctx context.Context, keywords []string, techStack []string, torPro
 	)
 
 	g, ctx := errgroup.WithContext(ctx)
-	g.SetLimit(500)
+	workerLimit := 500
+	minScore := 5
+	retries := 2
+	if cfg, err := config.LoadConfig(); err == nil && cfg != nil {
+		if cfg.Scoring.WorkerLimit > 0 {
+			workerLimit = cfg.Scoring.WorkerLimit
+		}
+		if cfg.Scoring.MinScoreThreshold > 0 {
+			minScore = cfg.Scoring.MinScoreThreshold
+		}
+	}
+	g.SetLimit(workerLimit)
+	failed := 0
 
 	for _, src := range feeds {
 		src := src
 		g.Go(func() error {
-			feedArticles, err := fetchSingleFeed(ctx, src, torProxy, db)
+			feedArticles, err := fetchSingleFeedWithRetry(ctx, src, torProxy, db, retries)
 			if err != nil {
+				mu.Lock()
+				failed++
+				mu.Unlock()
 				return nil
 			}
 
@@ -63,7 +79,7 @@ func FetchAll(ctx context.Context, keywords []string, techStack []string, torPro
 			validArticles := []models.Article{}
 			for _, a := range feedArticles {
 				scorer.ScoreArticle(&a, keywords, techStack)
-				if a.Score > 5 {
+				if a.Score > minScore {
 					validArticles = append(validArticles, a)
 
 					if db != nil {
@@ -87,13 +103,15 @@ func FetchAll(ctx context.Context, keywords []string, techStack []string, torPro
 		var validArticles []models.Article
 		for _, a := range dragnetArticles {
 			scorer.ScoreArticle(&a, keywords, techStack)
-			validArticles = append(validArticles, a)
+			if a.Score > minScore {
+				validArticles = append(validArticles, a)
 
-			if db != nil {
-				a.IoCs = ext.ExtractIoCs(a)
-				a.PatchLink = ext.ExtractPatchLink(a)
-				ents := ext.ExtractEntities(a)
-				_ = db.SaveArticle(a, ents)
+				if db != nil {
+					a.IoCs = ext.ExtractIoCs(a)
+					a.PatchLink = ext.ExtractPatchLink(a)
+					ents := ext.ExtractEntities(a)
+					_ = db.SaveArticle(a, ents)
+				}
 			}
 		}
 		mu.Lock()
@@ -110,7 +128,9 @@ func FetchAll(ctx context.Context, keywords []string, techStack []string, torPro
 			if err == nil {
 				mu.Lock()
 				for _, a := range robinArticles {
-					articles = append(articles, a)
+					if a.Score > minScore {
+						articles = append(articles, a)
+					}
 				}
 				mu.Unlock()
 			}
@@ -139,8 +159,30 @@ func FetchAll(ctx context.Context, keywords []string, techStack []string, torPro
 		Articles:     finalArticles,
 		TotalFeeds:   len(feeds),
 		FetchedFeeds: fetched,
+		FailedFeeds:  failed,
 		Duration:     time.Since(start),
 	}, nil
+}
+
+func fetchSingleFeedWithRetry(ctx context.Context, source models.FeedSource, torProxy string, db *database.IntelligenceDB, retries int) ([]models.Article, error) {
+	var lastErr error
+	for attempt := 0; attempt <= retries; attempt++ {
+		articles, err := fetchSingleFeed(ctx, source, torProxy, db)
+		if err == nil {
+			return articles, nil
+		}
+		lastErr = err
+		if attempt == retries {
+			break
+		}
+		backoff := time.Duration(250*(1<<attempt)) * time.Millisecond
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(backoff):
+		}
+	}
+	return nil, lastErr
 }
 
 func LoadFeeds(data []byte) ([]models.FeedSource, error) {
