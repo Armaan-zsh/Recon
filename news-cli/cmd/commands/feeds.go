@@ -3,7 +3,10 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"news-cli/internal/config"
 	"news-cli/internal/feeds"
+	"news-cli/internal/models"
 	"os"
 	"path/filepath"
 	"strings"
@@ -77,6 +80,8 @@ var feedsCmd = &cobra.Command{
 	Long:  "Add, remove, list, and cleanup RSS feed sources for Recon.",
 }
 
+var feedKind string
+
 var feedsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all configured feeds",
@@ -100,7 +105,15 @@ var feedsAddCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
-		url := args[1]
+		rawURL := args[1]
+		normalizedURL, err := normalizeFeedURL(rawURL)
+		if err != nil {
+			return err
+		}
+		if err := validateFeedURLSafety(normalizedURL, feedKind); err != nil {
+			return err
+		}
+		name = formatFeedName(name, feedKind)
 
 		feeds, err := loadFeeds()
 		if err != nil {
@@ -109,18 +122,21 @@ var feedsAddCmd = &cobra.Command{
 
 		// Check for duplicates
 		for _, feed := range feeds.Links {
-			if strings.EqualFold(feed.URL, url) {
-				return fmt.Errorf("feed with URL '%s' already exists as '%s'", url, feed.Name)
+			if strings.EqualFold(feed.URL, normalizedURL) {
+				return fmt.Errorf("feed with URL '%s' already exists as '%s'", normalizedURL, feed.Name)
 			}
 		}
 
-		feeds.Links = append(feeds.Links, FeedEntry{Name: name, URL: url})
+		feeds.Links = append(feeds.Links, FeedEntry{Name: name, URL: normalizedURL})
 
 		if err := saveFeeds(feeds); err != nil {
 			return err
 		}
 
-		fmt.Printf("✅ Added feed: %s (%s)\n", name, url)
+		fmt.Printf("✅ Added feed: %s (%s)\n", name, normalizedURL)
+		if feedKind == "youtube" && !strings.Contains(normalizedURL, "feeds/videos.xml") {
+			fmt.Println("⚠️  YouTube URL added, but best reliability is channel RSS (feeds/videos.xml?channel_id=...).")
+		}
 		return nil
 	},
 }
@@ -248,6 +264,7 @@ var feedsMergeCmd = &cobra.Command{
 }
 
 func init() {
+	feedsAddCmd.Flags().StringVar(&feedKind, "kind", "blog", "Source kind: blog|youtube|forum|darkweb|custom")
 	feedsCmd.AddCommand(feedsListCmd)
 	feedsCmd.AddCommand(feedsAddCmd)
 	feedsCmd.AddCommand(feedsRemoveCmd)
@@ -258,4 +275,47 @@ func init() {
 // GetFeedsCmd returns the feeds command for use in main.go
 func GetFeedsCmd() *cobra.Command {
 	return feedsCmd
+}
+
+func normalizeFeedURL(raw string) (string, error) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Host == "" {
+		return "", fmt.Errorf("invalid URL: %s", raw)
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return "", fmt.Errorf("unsupported URL scheme: %s (only http/https allowed)", u.Scheme)
+	}
+	return u.String(), nil
+}
+
+func validateFeedURLSafety(feedURL string, kind string) error {
+	kind = strings.ToLower(strings.TrimSpace(kind))
+	switch kind {
+	case "blog", "youtube", "forum", "darkweb", "custom":
+	default:
+		return fmt.Errorf("invalid --kind '%s' (use blog|youtube|forum|darkweb|custom)", kind)
+	}
+
+	isOnion := models.IsOnionURL(feedURL)
+	if kind == "darkweb" && !isOnion {
+		return fmt.Errorf("darkweb feed must use a .onion URL")
+	}
+	if isOnion {
+		cfg, err := config.LoadConfig()
+		if err != nil || cfg == nil || strings.TrimSpace(cfg.TorProxy) == "" {
+			return fmt.Errorf("onion feeds require configured tor_proxy in recon config")
+		}
+	}
+	return nil
+}
+
+func formatFeedName(name string, kind string) string {
+	name = strings.TrimSpace(name)
+	kind = strings.ToUpper(strings.TrimSpace(kind))
+	prefix := "[" + kind + "] "
+	if strings.HasPrefix(strings.ToUpper(name), prefix) {
+		return name
+	}
+	return prefix + name
 }
