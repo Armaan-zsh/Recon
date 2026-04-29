@@ -431,13 +431,15 @@ func (i *IntelligenceDB) GetTrendingEntities(hours int, limit int) ([]models.Ent
 }
 
 func (i *IntelligenceDB) GetArticlesByDate(date string, limit int) ([]models.Article, error) {
+	startDate := date + " 00:00:00"
+	endDate := date + " 23:59:59"
 	rows, err := i.db.Query(`
 		SELECT title, link, published_at, source_name, score, summary, iocs, patch_link
 		FROM articles
-		WHERE substr(published_at, 1, 10) = ?
+		WHERE published_at >= ? AND published_at <= ?
 		ORDER BY score DESC, published_at DESC
 		LIMIT ?
-	`, date, limit)
+	`, startDate, endDate, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +566,7 @@ func (i *IntelligenceDB) GetArchiveDays() ([]ArchiveDay, error) {
 	rows, err := i.db.Query(`
 		SELECT substr(published_at, 1, 10) as d, COUNT(*) as c
 		FROM articles
-		WHERE substr(published_at, 1, 10) >= ?
+		WHERE published_at >= ?
 		GROUP BY d
 		ORDER BY d DESC
 	`, currentYearStart)
